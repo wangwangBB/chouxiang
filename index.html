@@ -472,6 +472,96 @@
                 }, 100);
             } 
             
+            else if (gameId === 'wooden_fish') {
+                container.innerHTML = `
+                    <style>
+                        @keyframes float-merit {
+                            0% { opacity: 1; transform: translateY(0) scale(1); }
+                            100% { opacity: 0; transform: translateY(-60px) scale(1.5); color: var(--neon-pink); }
+                        }
+                        .merit-text {
+                            position: absolute;
+                            color: #fff;
+                            font-weight: bold;
+                            pointer-events: none;
+                            animation: float-merit 0.8s ease-out forwards;
+                            text-shadow: 0 0 5px var(--neon-cyan);
+                            z-index: 50;
+                        }
+                        .muyu-body {
+                            background: linear-gradient(145deg, #78350f, #451a03);
+                            box-shadow: inset 0 5px 15px rgba(255,255,255,0.1), 0 10px 0 #290f02;
+                        }
+                        .muyu-body:active {
+                            transform: translateY(8px);
+                            box-shadow: inset 0 5px 15px rgba(255,255,255,0.1), 0 2px 0 #290f02;
+                        }
+                    </style>
+                    <div id="muyu-arena" class="relative w-full h-72 bg-gray-900 rounded-lg flex flex-col items-center justify-center select-none overflow-hidden" style="touch-action: none;">
+                        <div class="absolute top-4 left-4 text-xl font-mono text-cyan-400">功德: <span id="merit-count">0</span></div>
+                        
+                        <div id="muyu-btn" class="muyu-body w-32 h-24 rounded-t-full rounded-b-3xl cursor-pointer flex items-center justify-center relative mt-4 transition-all duration-75">
+                            <div class="w-16 h-2 bg-amber-900 rounded-full opacity-50 mb-4"></div>
+                        </div>
+
+                        <button id="muyu-finish" class="mt-10 px-6 py-2 rounded-lg font-bold text-gray-500 bg-gray-800 border border-gray-600 transition-all duration-300 pointer-events-none">功德圆满</button>
+                    </div>
+                `;
+                const btn = document.getElementById('muyu-btn');
+                const countEl = document.getElementById('merit-count');
+                const finishBtn = document.getElementById('muyu-finish');
+                const arena = document.getElementById('muyu-arena');
+                let count = 0;
+
+                const hit = (e) => {
+                    if (e.type === 'touchstart') e.preventDefault();
+                    count++;
+                    countEl.innerText = count;
+
+                    // 功德+1 特效
+                    const txt = document.createElement('div');
+                    txt.className = 'merit-text';
+                    txt.innerText = '功德+1';
+                    const rect = btn.getBoundingClientRect();
+                    const arenaRect = arena.getBoundingClientRect();
+                    
+                    let x, y;
+                    if (e.clientX) { x = e.clientX - arenaRect.left; y = e.clientY - arenaRect.top; }
+                    else if (e.touches && e.touches.length) { x = e.touches[0].clientX - arenaRect.left; y = e.touches[0].clientY - arenaRect.top; }
+                    else { x = rect.left - arenaRect.left + rect.width/2; y = rect.top - arenaRect.top; }
+                    
+                    txt.style.left = (x - 20) + 'px';
+                    txt.style.top = (y - 20) + 'px';
+                    arena.appendChild(txt);
+                    setTimeout(() => txt.remove(), 800);
+
+                    if (count === 49) {
+                        // 达到49下，按钮点亮
+                        finishBtn.classList.replace('bg-gray-800', 'bg-gradient-to-r');
+                        finishBtn.classList.add('from-pink-500', 'to-cyan-500', 'text-white', 'shadow-[0_0_15px_#ff00ff]');
+                        finishBtn.classList.replace('text-gray-500', 'text-white');
+                        finishBtn.classList.replace('pointer-events-none', 'pointer-events-auto');
+                        finishBtn.classList.add('cursor-pointer');
+                    } else if (count > 49) {
+                        // 敲多了，惩罚并重置
+                        count = 0;
+                        countEl.innerText = count;
+                        finishBtn.className = 'mt-10 px-6 py-2 rounded-lg font-bold text-gray-500 bg-gray-800 border border-gray-600 transition-all duration-300 pointer-events-none';
+                        triggerFail('wooden_fish');
+                    } else {
+                        // 没敲够时，保持按钮锁定
+                        finishBtn.className = 'mt-10 px-6 py-2 rounded-lg font-bold text-gray-500 bg-gray-800 border border-gray-600 transition-all duration-300 pointer-events-none';
+                    }
+                };
+
+                btn.addEventListener('mousedown', hit);
+                btn.addEventListener('touchstart', hit, {passive: false});
+                
+                finishBtn.addEventListener('click', () => {
+                    if (count === 49) triggerPass(15);
+                });
+            }
+
             else if (gameId === 'abstract_typing') {
                 const emojis = ['👽', '👾', '💩', '🧠', '👁️', '🌀', '🎭', '🧻'];
                 container.innerHTML = `<input type="text" id="weird-input" class="w-full p-4 bg-gray-900 border-2 border-cyan-500 rounded-lg text-2xl text-center focus:outline-none">`;
