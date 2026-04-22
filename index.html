@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>全宇宙抽象等级评估系统 v2.0</title>
+    <title>全宇宙抽象等级评估系统 v25.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -153,28 +153,7 @@
 
         const triggerPass = (score) => {
             cleanupGame();
-            // 白屏闪烁特效
-            const flash = document.createElement('div');
-            flash.className = 'fixed inset-0 bg-white z-[100] pointer-events-none transition-opacity duration-[800ms] opacity-100';
-            document.body.appendChild(flash);
-            setTimeout(() => flash.classList.replace('opacity-100', 'opacity-0'), 50);
-            setTimeout(() => flash.remove(), 1000);
-
-            // 巨大随机表情包特效
-            const emoji = document.createElement('div');
-            emoji.innerText = passEmojis[Math.floor(Math.random() * passEmojis.length)];
-            emoji.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] sm:text-[180px] z-[101] transition-all duration-700 transform scale-0 rotate-[-180deg] pointer-events-none drop-shadow-[0_0_30px_rgba(255,0,255,0.8)]';
-            document.body.appendChild(emoji);
-            
-            setTimeout(() => {
-                emoji.classList.replace('scale-0', 'scale-100');
-                emoji.classList.replace('rotate-[-180deg]', 'rotate-0');
-            }, 50);
-
-            setTimeout(() => {
-                emoji.remove();
-                handleAnswer(score); // 结算分数进入下一题
-            }, 1500);
+            handleAnswer(score); // 结算分数直接进入下一题
         };
 
         const triggerFail = (gameId) => {
@@ -624,6 +603,7 @@
             else if (gameId === 'color_trap') {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center w-full bg-gray-900 rounded-lg p-8">
+                        <p class="text-gray-400 mb-6 font-bold text-center animate-pulse">提示：请点击文字实际所显示的【颜色】</p>
                         <div class="text-6xl font-black mb-8 text-blue-500 tracking-widest pointer-events-none">红色</div>
                         <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
                             <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="red"></button>
