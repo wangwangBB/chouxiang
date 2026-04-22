@@ -577,6 +577,42 @@
                 });
             }
 
+            else if (gameId === 'dont_click') {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center w-full bg-gray-900 rounded-lg p-8 h-64 relative overflow-hidden select-none">
+                        <button id="forbidden-btn" class="px-8 py-4 bg-red-600 hover:bg-red-500 text-white text-2xl sm:text-3xl font-black rounded-full shadow-[0_0_40px_rgba(220,38,38,0.8)] transition-transform hover:scale-110 active:scale-95 animate-pulse">
+                            千万别点我！
+                        </button>
+                        <div class="absolute bottom-4 left-4 right-4 bg-gray-800 h-2 rounded overflow-hidden">
+                            <div id="resist-bar" class="bg-red-500 h-full w-0 transition-all duration-100"></div>
+                        </div>
+                    </div>
+                `;
+                const btn = document.getElementById('forbidden-btn');
+                const bar = document.getElementById('resist-bar');
+                let time = 0, done = false;
+
+                // 只要碰到按钮直接失败
+                btn.addEventListener('mousedown', () => { if(!done) { done = true; triggerFail('dont_click'); } });
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); if(!done) { done = true; triggerFail('dont_click'); } }, {passive: false});
+
+                // 坚持5秒不碰即可通关
+                setGameInterval(() => {
+                    if(done) return;
+                    time += 0.1;
+                    bar.style.width = Math.min((time / 5) * 100, 100) + '%';
+                    
+                    if (time >= 5) {
+                        done = true;
+                        bar.classList.replace('bg-red-500', 'bg-green-500');
+                        btn.classList.replace('bg-red-600', 'bg-green-600');
+                        btn.classList.remove('animate-pulse');
+                        btn.innerText = '你忍住了！';
+                        triggerPass(15);
+                    }
+                }, 100);
+            }
+
             else if (gameId === 'chaos_slider') {
                 container.innerHTML = `
                     <div class="w-full h-12 bg-gray-800 rounded relative overflow-hidden mb-4 border border-gray-600">
