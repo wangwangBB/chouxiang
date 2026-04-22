@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>全宇宙抽象等级评估系统 v25.0</title>
+    <title>全宇宙抽象等级评估系统 v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -238,9 +238,9 @@
             { type: 'q', q: '请用抽象的方式描述“头发”：', options: [{t:'头上的毛',s:0}, {t:'烦恼丝',s:5}, {t:'无根之草',s:10}, {t:'程序员的生命倒计时指示器',s:15}] },
             
             // 小游戏 4、5、6
-            { type: 'game', id: 'dont_click', title: '小游戏：克制力测试', desc: '屏幕上会慢慢出现一个按钮。千万不要点它！等待5秒钟即可通关。' },
-            { type: 'game', id: 'chaos_slider', title: '小游戏：抑制癫狂', desc: '拖动滑块，努力将它保持在中间绿色区域坚持2秒钟！它会自己乱动！' },
-            { type: 'game', id: 'catch_btn', title: '小游戏：抓住我', desc: '按钮像抹了油一样！尝试在10秒内点到它！' },
+            { type: 'game', id: 'dont_click', title: '小游戏：克制力测试', desc: '' },
+            { type: 'game', id: 'chaos_slider', title: '小游戏：抑制癫狂', desc: '' },
+            { type: 'game', id: 'find_slacker', title: '小游戏：乱中找唯一摆烂', desc: '' },
 
             // === 题型5：逻辑鬼才题 ===
             { type: 'q', q: '如果1=5, 2=10, 3=15, 4=20, 那么5=？', options: [{t:'25',s:0}, {t:'0',s:5}, {t:'1',s:10}, {t:'5=1=5无限循环',s:15}] },
@@ -515,89 +515,70 @@
                 }, 100);
             }
 
-            else if (gameId === 'wooden_fish') {
+            else if (gameId === 'find_slacker') {
                 container.innerHTML = `
-                    <div id="game-container" class="relative w-full bg-gray-900 rounded-lg flex flex-col items-center justify-center p-6 h-64 overflow-hidden select-none border border-amber-900/50">
-                        <div id="merit-count" class="text-3xl font-bold text-amber-500 mb-6 font-mono z-10 drop-shadow-md">功德: 0</div>
-                        <div id="muyu" class="relative w-28 h-20 bg-gradient-to-br from-amber-700 to-amber-900 rounded-full cursor-pointer flex items-center justify-center shadow-[0_10px_20px_rgba(0,0,0,0.5),inset_0_3px_5px_rgba(255,255,255,0.2)] transition-transform active:scale-95 z-10">
-                            <div class="absolute w-16 h-6 border-t-4 border-amber-950/40 rounded-full top-2"></div>
-                            <div class="absolute w-2 h-2 bg-amber-950/30 rounded-full right-4 top-8"></div>
-                        </div>
-                        <button id="finish-btn" class="mt-8 px-6 py-2 bg-gray-700 rounded text-gray-300 font-bold opacity-50 cursor-not-allowed transition-all z-10">功德圆满</button>
+                    <style>
+                        @keyframes frantic-shake {
+                            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+                            25% { transform: translate(4px, -4px) rotate(15deg) scale(1.2); }
+                            50% { transform: translate(-4px, 4px) rotate(-15deg) scale(0.9); }
+                            75% { transform: translate(4px, 4px) rotate(10deg) scale(1.1); }
+                            100% { transform: translate(-4px, -4px) rotate(-10deg) scale(1); }
+                        }
+                        .frantic-icon {
+                            animation: frantic-shake 0.2s infinite;
+                            position: absolute;
+                            font-size: 2.5rem;
+                            cursor: pointer;
+                            user-select: none;
+                            -webkit-tap-highlight-color: transparent;
+                        }
+                        .still-icon {
+                            position: absolute;
+                            font-size: 2.5rem;
+                            cursor: pointer;
+                            user-select: none;
+                            z-index: 10;
+                            -webkit-tap-highlight-color: transparent;
+                        }
+                    </style>
+                    <div id="slacker-arena" class="relative w-full h-80 bg-gray-900 rounded-lg overflow-hidden border-2 border-red-500 shadow-[inset_0_0_30px_rgba(239,68,68,0.3)]">
                     </div>
                 `;
-                const box = document.getElementById('game-container'), muyu = document.getElementById('muyu'), countDisplay = document.getElementById('merit-count'), finishBtn = document.getElementById('finish-btn');
-                let merits = 0, gameOver = false;
-
-                const createFloatingText = (x, y) => {
-                    const el = document.createElement('div'); el.innerText = '功德+1'; el.className = 'absolute text-amber-400 font-bold pointer-events-none transition-all duration-700 ease-out z-20 text-lg drop-shadow-md';
-                    el.style.left = (x + (Math.random() - 0.5) * 40) + 'px'; el.style.top = y + 'px'; el.style.transform = 'translate(-50%, -50%)'; el.style.opacity = '1';
-                    box.appendChild(el); void el.offsetWidth; el.style.top = (y - 80) + 'px'; el.style.opacity = '0'; setGameTimeout(() => el.remove(), 700);
-                };
-
-                const handleHit = (e) => {
-                    if(gameOver) return;
-                    let clientX = e.clientX || (e.touches && e.touches[0].clientX), clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                    if(!clientX) { const rect = box.getBoundingClientRect(); clientX = rect.left + rect.width/2; clientY = rect.top + rect.height/2; }
-                    const rect = box.getBoundingClientRect(); createFloatingText(clientX - rect.left, clientY - rect.top); 
-                    merits++;
-                    countDisplay.innerText = `功德: ${merits}`;
+                const arena = document.getElementById('slacker-arena');
+                const energeticEmojis = ['💪', '🔥', '🏃', '🚀', '💯', '卷', '拼'];
+                
+                // 渲染 40 个疯狂抖动的正能量图标
+                for (let i = 0; i < 40; i++) {
+                    const el = document.createElement('div');
+                    el.innerText = energeticEmojis[Math.floor(Math.random() * energeticEmojis.length)];
+                    el.className = 'frantic-icon drop-shadow-md';
+                    el.style.left = (Math.random() * 85) + '%';
+                    el.style.top = (Math.random() * 85) + '%';
+                    el.style.animationDelay = (Math.random() * 0.5) + 's';
                     
-                    if (merits > 49) {
-                        gameOver = true;
-                        triggerFail('wooden_fish');
-                    } else if (merits === 49) {
-                        finishBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-700', 'text-gray-300'); finishBtn.classList.add('hover:bg-amber-500', 'bg-amber-600', 'text-white', 'shadow-[0_0_15px_rgba(245,158,11,0.6)]');
-                    }
-                };
-                muyu.addEventListener('mousedown', e => { e.preventDefault(); handleHit(e); }); muyu.addEventListener('touchstart', e => { e.preventDefault(); handleHit(e); }, { passive: false });
-                finishBtn.addEventListener('click', () => { if (merits === 49 && !gameOver) { gameOver = true; finishBtn.innerText = "🙏 善哉"; triggerPass(15); } });
-            }
+                    // 点到发癫元素直接失败
+                    el.addEventListener('mousedown', (e) => { e.stopPropagation(); triggerFail('find_slacker'); });
+                    el.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); triggerFail('find_slacker'); }, {passive: false});
+                    arena.appendChild(el);
+                }
 
-            else if (gameId === 'dont_click') {
-                container.innerHTML = `
-                    <div id="game-container" class="flex items-center justify-center w-full h-32 relative">
-                        <button id="tempt-btn" class="bg-red-600 text-white font-bold py-3 px-8 rounded opacity-0 transition-opacity duration-1000 transform scale-50 z-10"></button>
-                    </div>
-                `;
-                const btn = document.getElementById('tempt-btn');
-                let time = 5, clicked = false;
-                setGameTimeout(() => { btn.style.opacity = '1'; btn.style.transform = 'scale(1)'; }, 500);
-                btn.addEventListener('click', () => { 
-                    clicked = true; 
-                    triggerFail('dont_click');
-                });
-                setGameInterval(() => {
-                    if (clicked) return;
-                    time--;
-                    if (time <= 0) { 
-                        btn.style.opacity = '0'; 
-                        triggerPass(15); 
-                    }
-                }, 1000);
-            }
-
-            else if (gameId === 'catch_btn') {
-                container.innerHTML = `
-                    <div id="catch-zone" class="relative w-full h-64 bg-gray-900 rounded-lg overflow-hidden border border-cyan-500">
-                        <button id="run-btn" class="absolute w-12 h-12 bg-pink-500 rounded-full text-white font-bold transition-all duration-[50ms] shadow-[0_0_15px_#ff00ff]"></button>
-                    </div>
-                `;
-                const btn = document.getElementById('run-btn');
-                let timeLeft = 10, isCaught = false;
-                btn.style.left = '40%'; btn.style.top = '40%';
-                const moveBtn = () => { if(!isCaught) { btn.style.left = Math.random() * 80 + '%'; btn.style.top = Math.random() * 80 + '%'; } };
-                btn.addEventListener('mouseenter', moveBtn); btn.addEventListener('touchstart', e => { e.preventDefault(); moveBtn(); }, {passive: false});
-                btn.addEventListener('click', () => { 
-                    isCaught = true; 
-                    btn.classList.replace('bg-pink-500', 'bg-green-500'); 
-                    triggerPass(15); 
-                });
-                setGameInterval(() => {
-                    if(isCaught) return;
-                    timeLeft--;
-                    if(timeLeft <= 0) triggerFail('catch_btn');
-                }, 1000);
+                // 渲染唯一一个摆烂咸鱼
+                const slacker = document.createElement('div');
+                slacker.innerText = '🐟'; // 摆烂代表
+                slacker.className = 'still-icon drop-shadow-lg';
+                slacker.style.left = (Math.random() * 85) + '%';
+                slacker.style.top = (Math.random() * 85) + '%';
+                
+                // 精准点到咸鱼通关
+                slacker.addEventListener('mousedown', (e) => { e.stopPropagation(); triggerPass(15); });
+                slacker.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); triggerPass(15); }, {passive: false});
+                
+                // 点到空白处也会失败（防止乱点）
+                arena.addEventListener('mousedown', () => triggerFail('find_slacker'));
+                arena.addEventListener('touchstart', (e) => { e.preventDefault(); triggerFail('find_slacker'); }, {passive: false});
+                
+                arena.appendChild(slacker);
             }
 
             else if (gameId === 'color_trap') {
@@ -606,10 +587,10 @@
                         <p class="text-gray-400 mb-6 font-bold text-center animate-pulse">提示：请点击文字实际所显示的【颜色】</p>
                         <div class="text-6xl font-black mb-8 text-blue-500 tracking-widest pointer-events-none">红色</div>
                         <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
-                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="red"></button>
-                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="yellow"></button>
-                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="green"></button>
-                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="blue"></button>
+                            <button class="color-btn py-4 text-xl font-bold text-gray-300 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700 hover:text-white" data-color="red">红色</button>
+                            <button class="color-btn py-4 text-xl font-bold text-gray-300 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700 hover:text-white" data-color="yellow">黄色</button>
+                            <button class="color-btn py-4 text-xl font-bold text-gray-300 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700 hover:text-white" data-color="green">绿色</button>
+                            <button class="color-btn py-4 text-xl font-bold text-gray-300 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700 hover:text-white" data-color="blue">蓝色</button>
                         </div>
                     </div>
                 `;
