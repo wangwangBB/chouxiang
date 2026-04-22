@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>全宇宙抽象等级评估系统 v1.0</title>
+    <title>全宇宙抽象等级评估系统 v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
 
@@ -71,7 +72,6 @@
             transform: translateX(5px);
         }
 
-        /* Game specific styles */
         #game-container {
             position: relative;
             width: 100%;
@@ -81,16 +81,6 @@
             border-radius: 0.5rem;
             overflow: hidden;
             touch-action: none;
-        }
-
-        .moving-dot {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background-color: var(--neon-cyan);
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px var(--neon-cyan);
         }
 
         input[type=range].chaos-slider {
@@ -119,9 +109,7 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
 
-    <!-- Main Application Container -->
     <div id="app" class="w-full max-w-2xl glass-panel p-6 sm:p-8 relative">
-        <!-- Content will be injected here by JS -->
         <div class="text-center py-10">
             <i class="fas fa-spinner fa-spin text-4xl text-pink-500"></i>
             <p class="mt-4 text-cyan-400">正在连接宇宙意识网络...</p>
@@ -133,52 +121,108 @@
             currentStep: -1,
             score: 0,
             userName: "",
-            userId: "user_" + Math.random().toString(36).substr(2, 9), // 随机生成用户ID
-            leaderboardData: [],
+            userId: "user_" + Math.random().toString(36).substr(2, 9),
             usingLocal: false
         };
 
         const testData = [
-            { type: 'q', q: '已知今天是星期四，此时最合理的行为是？', options: [{t:'好好学习，天天向上',s:0}, {t:'在群里发一段没人看的长文然后求V50',s:10}, {t:'变成一块疯狂的炸鸡',s:8}, {t:'准时下班',s:0}] },
-            { type: 'q', q: '作为一只合格的“吗喽”，面对早八或工作时你的内心OS是？', options: [{t:'充满干劲',s:0}, {t:'吗喽的命也是命，天塌下来有高个子顶',s:10}, {t:'思考如何反向进化为阿米巴原虫',s:8}, {t:'我爱工作',s:0}] },
-            { type: 'game', id: 'stare_abyss', title: '小游戏：凝视深渊', desc: '把鼠标指针停在深渊中心（手机端则按住不放），保持绝对静止3秒钟。任何微小的颤抖都会导致重新计时。' },
-            { type: 'q', q: '当有人对你说“尊嘟假嘟”时，最抽象的回复是？', options: [{t:'真的',s:0}, {t:'O.o',s:5}, {t:'根据量子力学，此时处于既尊嘟又假嘟的叠加态',s:10}, {t:'你再说一遍？',s:0}] },
-            { type: 'q', q: '“恐龙抗狼”的终极物理学含义是？', options: [{t:'云南非物质文化遗产',s:0}, {t:'描述宇宙大爆炸时产生的引力波音效',s:10}, {t:'一种强力的镇定剂',s:5}, {t:'不知道',s:0}] },
+            // === 题型1：梗系解码题 ===
+            { type: 'q', q: '请问以下哪个选项最能准确描述“电子木鱼”的核心功能？', options: [{t:'宗教修行工具',s:0}, {t:'音乐播放器',s:0}, {t:'解压软件',s:5}, {t:'电子功德充值器',s:15}] },
+            { type: 'q', q: '当有人说“我是一个保安，爱吃小熊饼干”，他最想表达的是？', options: [{t:'他的职业和爱好',s:0}, {t:'他很可爱',s:0}, {t:'他在摸鱼',s:10}, {t:'他想下班',s:15}] },
+            { type: 'q', q: '请问“九转大肠”的灵魂是什么？', options: [{t:'大肠的口感',s:0}, {t:'厨师的演技',s:5}, {t:'评委的表情',s:10}, {t:'保留的原味',s:15}] },
+            { type: 'q', q: '以下哪个是“抽象圣经”？', options: [{t:'《论语》',s:0}, {t:'《圣经》',s:0}, {t:'《旭旭宝宝经典语录》',s:10}, {t:'《电棍otto语录》',s:15}] },
+            { type: 'q', q: '“恐龙抗狼”的终极物理学含义是？', options: [{t:'云南非物质文化遗产',s:0}, {t:'一种强力的镇定剂',s:5}, {t:'不知道',s:0}, {t:'描述宇宙大爆炸时产生的引力波音效',s:15}] },
+            { type: 'q', q: '加入“麦门”后，你的灵魂会变成什么形状？', options: [{t:'汉堡包',s:2}, {t:'M字形',s:5}, {t:'完美的圆形',s:0}, {t:'一根金黄酥脆永远不会软塌的薯条',s:15}] },
+            { type: 'q', q: '“哈基米”原本在二次元语境里是指什么？', options: [{t:'可爱的小猫咪',s:0}, {t:'所有毛茸茸的动物',s:0}, {t:'一种神秘魔法阵',s:5}, {t:'赛马娘里喝的蜂蜜水',s:15}] },
+            
+            // 小游戏 1
+            { type: 'game', id: 'stare_abyss', title: '小游戏：凝视深渊', desc: '把鼠标指针停在深渊中心（手机端则按住不放），保持绝对静止3秒钟。任何颤抖都会导致重新计时。' },
+            
+            // === 题型2：离谱联想题 ===
+            { type: 'q', q: '请用一句话建立“香蕉”和“奥特曼”的联系：', options: [{t:'没联系',s:0}, {t:'香蕉是黄色的，奥特曼眼睛也是黄色的',s:5}, {t:'奥特曼打怪兽时把香蕉当武器',s:10}, {t:'香蕉的皮是奥特曼的变身器',s:15}] },
+            { type: 'q', q: '请用一句话建立“数学老师”和“挖掘机”的联系：', options: [{t:'没关系',s:0}, {t:'都在使用工具',s:5}, {t:'都在挖掘深层逻辑',s:10}, {t:'数学老师的课能把我的脑干挖空',s:15}] },
+            { type: 'q', q: '请用一句话建立“保温杯”和“摇滚乐”的联系：', options: [{t:'没联系',s:0}, {t:'主唱喝水用',s:5}, {t:'保温杯里泡枸杞是中年摇滚',s:10}, {t:'用保温杯砸架子鼓才是真摇滚',s:15}] },
+            { type: 'q', q: '请用一句话建立“鲁迅”和“键盘”的联系：', options: [{t:'没联系',s:0}, {t:'鲁迅其实用打字机',s:5}, {t:'鲁迅的笔就是他的键盘',s:10}, {t:'网上冲浪的网友人均都是鲁迅',s:15}] },
+            
+            // 小游戏 2
+            { type: 'game', id: 'wooden_fish', title: '小游戏：赛博木鱼', desc: '虔诚地敲击木鱼。精确敲击49下后点击“功德圆满”。多敲一下则前功尽弃！' },
+
+            // === 题型3：反常识选择题 ===
+            { type: 'q', q: '为什么小明走路脚不沾地？', options: [{t:'地球是圆的',s:0}, {t:'他没有脚',s:0}, {t:'他会飞',s:5}, {t:'他穿了鞋子',s:15}] },
+            { type: 'q', q: '什么动物最容易被贴在墙上？', options: [{t:'壁虎',s:0}, {t:'蜗牛',s:0}, {t:'蜘蛛',s:5}, {t:'海豹 (海报)',s:15}] },
+            { type: 'q', q: '什么水永远用不完？', options: [{t:'海水',s:0}, {t:'雨水',s:0}, {t:'口水',s:5}, {t:'打工人的泪水',s:15}] },
+            { type: 'q', q: '哪种瓜不能吃？', options: [{t:'西瓜',s:0}, {t:'南瓜',s:0}, {t:'傻瓜',s:5}, {t:'顶呱呱',s:15}] },
+            { type: 'q', q: '为什么陨石总是能精准地砸在陨石坑里？', options: [{t:'万有引力',s:0}, {t:'巧合',s:5}, {t:'因为坑是陨石砸出来的',s:10}, {t:'因为那是陨石的专属VIP停车位',s:15}] },
+            
+            // 小游戏 3
             { type: 'game', id: 'abstract_typing', title: '小游戏：外星电报', desc: '在输入框里随便打字，只要打出5个字符即可通关，但你看到的可能不是你打的。' },
-            { type: 'q', q: '加入“麦门”后，你的灵魂会变成什么形状？', options: [{t:'M字形',s:5}, {t:'一根金黄酥脆永远不会软塌的薯条',s:10}, {t:'完美的圆形',s:0}, {t:'汉堡包',s:2}] },
-            { type: 'q', q: '“哈基米”原本在二次元语境里是指什么？', options: [{t:'可爱的小猫咪',s:0}, {t:'所有毛茸茸的动物',s:0}, {t:'赛马娘里喝的蜂蜜水',s:10}, {t:'一种神秘魔法阵',s:8}] },
-            { type: 'game', id: 'chaos_slider', title: '小游戏：抑制癫狂', desc: '拖动滑块，努力将它保持在中间绿色区域坚持2秒钟！它会自己乱动！' },
-            { type: 'q', q: '如果一个“纯爱战神”遇到一个“牛头人(NTR)”，他应该使用什么武器？', options: [{t:'道德的谴责',s:0}, {t:'物理超度（拔出四十米大刀）',s:10}, {t:'一起加入',s:0}, {t:'召唤纯爱结界',s:8}] },
-            { type: 'q', q: '遇到困难时，当代年轻人最常向谁求助？', options: [{t:'警察蜀黍',s:0}, {t:'亲戚朋友',s:0}, {t:'赛博佛祖和电子木鱼',s:10}, {t:'财神爷',s:8}] },
-            { type: 'game', id: 'wooden_fish', title: '小游戏：赛博木鱼', desc: '虔诚地敲击木鱼。精确敲击49下后点击“功德圆满”。多敲一下则功德清零，前功尽弃！' },
-            { type: 'q', q: '“质疑xxx，理解xxx，成为xxx”，xxx最不可能是以下哪一项？', options: [{t:'宛平南路600号',s:8}, {t:'精神状态极其稳定的打工人',s:10}, {t:'大熊猫',s:5}, {t:'一只水豚(卡皮巴拉)',s:5}] },
-            { type: 'q', q: '生命的终极意义是？', options: [{t:'42',s:5}, {t:'繁衍与进化',s:0}, {t:'成为一个搞笑男/女',s:8}, {t:'原神，启动！',s:10}] },
-            { type: 'q', q: '如果你的CP（配对）BE（悲剧结局）了，你最抽象的做法是？', options: [{t:'抱头痛哭',s:0}, {t:'寄刀片给作者',s:5}, {t:'连夜写十万字同人文强行把他们写进同一个骨灰盒',s:10}, {t:'换一对磕',s:0}] },
+
+            // === 题型4：抽象描述题 ===
+            { type: 'q', q: '请用抽象的方式描述“手机”：', options: [{t:'通讯工具',s:0}, {t:'发光板',s:5}, {t:'现代人的外置器官',s:10}, {t:'装下世界的小盒子',s:15}] },
+            { type: 'q', q: '请用抽象的方式描述“闹钟”：', options: [{t:'叫醒工具',s:0}, {t:'噪音制造机',s:5}, {t:'美梦终结者',s:10}, {t:'资本家安插在我床头的监工',s:15}] },
+            { type: 'q', q: '请用抽象的方式描述“雨伞”：', options: [{t:'挡雨的',s:0}, {t:'长柄香菇',s:5}, {t:'随身携带的便携式天空',s:10}, {t:'用来测试今天会不会下雨的玄学道具(带了就不下)',s:15}] },
+            { type: 'q', q: '请用抽象的方式描述“头发”：', options: [{t:'头上的毛',s:0}, {t:'烦恼丝',s:5}, {t:'无根之草',s:10}, {t:'程序员的生命倒计时指示器',s:15}] },
+            
+            // 小游戏 4、5、6
             { type: 'game', id: 'dont_click', title: '小游戏：克制力测试', desc: '屏幕上会慢慢出现一个按钮。千万不要点它！等待5秒钟即可通关。' },
-            { type: 'q', q: '“City不City啊”这句话用来评价什么最合适？', options: [{t:'上海外滩的咖啡馆',s:0}, {t:'穿着人字拖逛大润发',s:10}, {t:'纽约时代广场',s:5}, {t:'村头刚铺好的水泥路',s:8}] },
-            { type: 'q', q: '大早上谁在发癫？', options: [{t:'邻居的狗',s:0}, {t:'楼上装修',s:0}, {t:'是我',s:10}, {t:'这个破烂不堪的世界',s:8}] },
-            { type: 'q', q: '这道题没有题目，请凭借你的直觉选择正确答案：', options: [{t:'A',s:0}, {t:'C',s:5}, {t:'选C的都是傻子，我选王司徒',s:10}, {t:'以上都不对',s:8}] },
-            { type: 'q', q: '最后一道题：做完这套测试，你的精神状态如何？', options: [{t:'非常正常',s:0}, {t:'有点迷茫',s:5}, {t:'想去大街上随便抓个人咬一口',s:10}, {t:'阿巴阿巴阿巴...',s:10}] }
+            { type: 'game', id: 'chaos_slider', title: '小游戏：抑制癫狂', desc: '拖动滑块，努力将它保持在中间绿色区域坚持2秒钟！它会自己乱动！' },
+            { type: 'game', id: 'catch_btn', title: '小游戏：抓住我', desc: '按钮像抹了油一样！尝试在10秒内点到它！' },
+
+            // === 题型5：逻辑鬼才题 ===
+            { type: 'q', q: '如果1=5, 2=10, 3=15, 4=20, 那么5=？', options: [{t:'25',s:0}, {t:'0',s:5}, {t:'1',s:10}, {t:'5=1=5无限循环',s:15}] },
+            { type: 'q', q: '如果所有的猫都是狗，所有的狗都是鸟，那么猫是什么？', options: [{t:'猫',s:0}, {t:'鸟',s:5}, {t:'狗',s:5}, {t:'薛定谔的猫鸟叠加态',s:15}] },
+            { type: 'q', q: '如果太阳从西边出来，那么会发生什么？', options: [{t:'世界末日',s:0}, {t:'地球反转',s:5}, {t:'外星入侵',s:5}, {t:'什么都不发生，我还是要早起打工',s:15}] },
+            { type: 'q', q: '生命的终极意义是？', options: [{t:'繁衍与进化',s:0}, {t:'42',s:5}, {t:'成为一个搞笑男/女',s:10}, {t:'原神，启动！',s:15}] },
+            { type: 'q', q: '如果你的CP（配对）BE（悲剧结局）了，你最抽象的做法是？', options: [{t:'抱头痛哭',s:0}, {t:'换一对磕',s:0}, {t:'寄刀片给作者',s:5}, {t:'连夜写十万字同人文强行把他们写进同一个骨灰盒',s:15}] },
+            
+            // 小游戏 7、8
+            { type: 'game', id: 'color_trap', title: '小游戏：颜色陷阱', desc: '打破视觉惯性。不要管文字写了什么，请点击文字实际所显示的【颜色】。' },
+            { type: 'game', id: 'spam_click', title: '小游戏：帕金森震颤', desc: '在10秒内，以最快的速度疯狂点击按钮50次！' },
+
+            // === 题型6：情景抽象题 ===
+            { type: 'q', q: '有人问你“吃饭了吗”，你怎么抽象地回答？', options: [{t:'吃了 / 没吃',s:0}, {t:'刚吃完空气',s:5}, {t:'我在等饭自己来找我',s:10}, {t:'饭已经在我的肚子里了，只是我还没感觉到',s:15}] },
+            { type: 'q', q: '你迟到了，老师问你为什么迟到，你怎么抽象地解释？', options: [{t:'起晚了',s:0}, {t:'堵车',s:0}, {t:'床把我封印了',s:10}, {t:'我的肉体到了，但灵魂还在路上',s:15}] },
+            { type: 'q', q: '朋友问你在干嘛，你怎么抽象地回答？', options: [{t:'玩手机',s:0}, {t:'发呆',s:5}, {t:'在进行光合作用',s:10}, {t:'正在努力维持宇宙的熵增',s:15}] },
+            { type: 'q', q: '当有人对你说“尊嘟假嘟”时，最抽象的回复是？', options: [{t:'真的',s:0}, {t:'你再说一遍？',s:0}, {t:'O.o',s:5}, {t:'根据量子力学，此时处于既尊嘟又假嘟的叠加态',s:15}] },
+            { type: 'q', q: '领导下达命令：“下班前交给我”，你应该？', options: [{t:'马上去做',s:0}, {t:'准时交',s:5}, {t:'下班前一秒发出去然后拉黑领导',s:10}, {t:'把时间停止，我就永远不用交',s:15}] },
+            { type: 'q', q: '“City不City啊”这句话用来评价什么最合适？', options: [{t:'上海外滩的咖啡馆',s:0}, {t:'纽约时代广场',s:5}, {t:'村头刚铺好的水泥路',s:10}, {t:'穿着人字拖逛大润发',s:15}] },
+            
+            // 小游戏 9、10
+            { type: 'game', id: 'hold_breath', title: '小游戏：按住憋气', desc: '按住按钮不要松手。你需要凭直觉在【精确的3.0秒】时松开它。' },
+            { type: 'game', id: 'fake_loading', title: '小游戏：虚假进度条', desc: '它卡在99%了，你能找到隐藏的通关机关吗？' },
+
+            // === 最终混合题 ===
+            { type: 'q', q: '如果一个“纯爱战神”遇到一个“牛头人(NTR)”，他应该使用什么武器？', options: [{t:'道德的谴责',s:0}, {t:'一起加入',s:0}, {t:'召唤纯爱结界',s:5}, {t:'物理超度（拔出四十米大刀）',s:15}] },
+            { type: 'q', q: '遇到困难时，当代年轻人最常向谁求助？', options: [{t:'警察蜀黍',s:0}, {t:'亲戚朋友',s:0}, {t:'财神爷',s:10}, {t:'赛博佛祖和电子木鱼',s:15}] },
+            { type: 'q', q: '“质疑xxx，理解xxx，成为xxx”，xxx最不可能是以下哪一项？', options: [{t:'大熊猫',s:5}, {t:'一只水豚(卡皮巴拉)',s:5}, {t:'宛平南路600号',s:10}, {t:'精神状态极其稳定的打工人',s:15}] },
+            { type: 'q', q: '“泰裤辣”的正确使用场景是？', options: [{t:'评价一条裤子',s:0}, {t:'跑步后',s:5}, {t:'吃麻辣火锅时',s:10}, {t:'作为一段毫无逻辑的演讲结尾',s:15}] },
+            { type: 'q', q: '大早上谁在发癫？', options: [{t:'邻居的狗',s:0}, {t:'楼上装修',s:0}, {t:'是我',s:10}, {t:'这个破烂不堪的世界',s:15}] },
+            { type: 'q', q: '这道题没有题目，请凭借你的直觉选择正确答案：', options: [{t:'A',s:0}, {t:'C',s:5}, {t:'以上都不对',s:10}, {t:'选C的都是傻子，我选王司徒',s:15}] },
+
+            // 最后的考验 11、12、13
+            { type: 'game', id: 'volume_troll', title: '小游戏：音量刺客', desc: '强迫症测试：请将音量滑块精确地停在 50。' },
+            { type: 'game', id: 'dont_do_anything', title: '小游戏：敌不动我不动', desc: '松开鼠标，离开屏幕。什么都不要做。' },
+            { type: 'game', id: 'captcha_troll', title: '小游戏：抽象验证码', desc: '证明你不是机器人。点击验证。' }
         ];
 
         const getRank = (score) => {
-            if (score < 50) return { title: "正常人类", desc: "你太正常了，这在互联网时代是一种罕见的病。", color: "text-gray-400" };
-            if (score < 100) return { title: "精神状态堪忧", desc: "你已经在发疯的边缘试探了，建议多看点猫猫狗狗视频。", color: "text-green-400" };
-            if (score < 150) return { title: "抽象带师", desc: "你的大脑沟壑里流淌着赛博朋克的机油，非常迷人。", color: "text-cyan-400" };
+            if (score < 250) return { title: "正常人类", desc: "你太正常了，这在互联网时代是一种罕见的病。", color: "text-gray-400" };
+            if (score < 450) return { title: "精神状态堪忧", desc: "你已经在发疯的边缘试探了，建议多看点猫猫狗狗视频。", color: "text-green-400" };
+            if (score < 650) return { title: "抽象带师", desc: "你的大脑沟壑里流淌着赛博朋克的机油，非常迷人。", color: "text-cyan-400" };
             return { title: "高维生物", desc: "地球不适合你，赶紧买张去半人马座的黄牛票吧。", color: "text-pink-500" };
         };
 
         const getLocalScores = () => {
             try {
-                let data = JSON.parse(localStorage.getItem('abs_leaderboard'));
+                let data = JSON.parse(localStorage.getItem('abs_leaderboard_v2'));
                 if (!data || data.length === 0) {
                     data = [
-                        { name: "孙笑川", score: 195, rankTitle: "高维生物" },
-                        { name: "马喽", score: 140, rankTitle: "抽象带师" },
-                        { name: "纯爱战神", score: 90, rankTitle: "精神状态堪忧" },
-                        { name: "打工人", score: 20, rankTitle: "正常人类" }
+                        { name: "孙笑川", score: 680, rankTitle: "高维生物" },
+                        { name: "马喽", score: 520, rankTitle: "抽象带师" },
+                        { name: "纯爱战神", score: 300, rankTitle: "精神状态堪忧" },
+                        { name: "打工人", score: 150, rankTitle: "正常人类" }
                     ];
-                    localStorage.setItem('abs_leaderboard', JSON.stringify(data));
+                    localStorage.setItem('abs_leaderboard_v2', JSON.stringify(data));
                 }
                 return data;
             } catch (e) {
@@ -190,45 +234,35 @@
             try {
                 let data = getLocalScores();
                 data.push(scoreData);
-                localStorage.setItem('abs_leaderboard', JSON.stringify(data));
+                data.sort((a, b) => b.score - a.score);
+                data = data.slice(0, 50);
+                localStorage.setItem('abs_leaderboard_v2', JSON.stringify(data));
             } catch(e) {
                 console.error("Local storage error:", e);
             }
         };
 
-        const renderLeaderboardList = (data) => {
-            const contentDiv = document.getElementById('ldb-content');
-            if (!contentDiv) return;
-            
-            if (data.length === 0) {
-                contentDiv.innerHTML = '<div class="text-center text-gray-500 py-10">这里还是一片虚无...</div>';
-                return;
-            }
+        const escapeHtml = (unsafe) => {
+            return (unsafe||"").toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        };
 
-            let listHtml = data.map((item, index) => {
-                let medal = '';
-                if (index === 0) medal = '<i class="fas fa-crown text-yellow-400 ml-2"></i>';
-                else if (index === 1) medal = '<i class="fas fa-medal text-gray-300 ml-2"></i>';
-                else if (index === 2) medal = '<i class="fas fa-medal text-amber-600 ml-2"></i>';
-
-                return `
-                    <div class="flex justify-between items-center p-3 rounded-lg bg-gray-800/50 border border-gray-700 hover:border-cyan-500/50 transition">
-                        <div class="flex items-center">
-                            <span class="w-6 text-gray-500 font-mono text-sm">${index + 1}.</span>
-                            <span class="font-bold ml-2 text-gray-200">${escapeHtml(item.name)}</span>
-                            ${medal}
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="text-xs text-pink-400 hidden sm:inline">${item.rankTitle || ''}</span>
-                            <span class="font-bold text-cyan-300 font-mono">${item.score} pt</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            if(state.currentStep === 21) { 
-                contentDiv.innerHTML = listHtml;
-            }
+        const alertCustom = (title, message) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm';
+            overlay.innerHTML = `
+                <div class="glass-panel p-6 max-w-sm w-full text-center border-pink-500 transform transition-all scale-100">
+                    <h3 class="text-xl font-bold text-pink-500 mb-2">${title}</h3>
+                    <p class="text-gray-300 mb-6">${message}</p>
+                    <button id="closeModalBtn" class="px-6 py-2 rounded btn-abstract w-full">知道了</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            document.getElementById('closeModalBtn').addEventListener('click', () => document.body.removeChild(overlay));
         };
 
         const appContainer = document.getElementById('app');
@@ -241,7 +275,7 @@
             renderHTML(`
                 <div class="text-center space-y-6">
                     <h1 class="text-3xl sm:text-5xl font-bold glitch-text mb-2">全宇宙抽象等级评估</h1>
-                    <p class="text-gray-300 text-sm sm:text-base">警告：本测试可能导致大脑短路、三观重塑或突然渴望吃生土豆。包含15道选择题与5个抽象交互。</p>
+                    <p class="text-gray-300 text-sm sm:text-base">警告：本测试包含37道灵魂拷问与13个精神污染小游戏。过程漫长且极易导致理智断线。</p>
                     <div class="mt-8">
                         <input type="text" id="playerName" placeholder="输入你的代号 (最长10字符)" maxlength="10" 
                             class="w-full sm:w-2/3 px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:border-pink-500 text-center text-white mb-4">
@@ -267,7 +301,6 @@
 
         const renderTest = () => {
             if (state.currentStep >= testData.length) {
-                state.currentStep = 20; 
                 renderResult();
                 return;
             }
@@ -292,9 +325,7 @@
                 contentHtml = `
                     <h2 class="text-xl sm:text-2xl font-bold mb-2 text-cyan-400">${item.title}</h2>
                     <p class="text-gray-400 text-sm mb-4">${item.desc}</p>
-                    <div id="game-area" class="w-full rounded-lg relative flex flex-col items-center justify-center">
-                        <!-- Game specific DOM will be injected here -->
-                    </div>
+                    <div id="game-area" class="w-full rounded-lg relative flex flex-col items-center justify-center"></div>
                 `;
             }
 
@@ -303,8 +334,8 @@
                     <span>进度: ${state.currentStep + 1} / ${testData.length}</span>
                     <span>当前抽象值: ${state.score}</span>
                 </div>
-                <div class="w-full bg-gray-800 rounded-full h-2 mb-8">
-                    <div class="bg-gradient-to-r from-pink-500 to-cyan-500 h-2 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                <div class="w-full bg-gray-800 rounded-full h-2 mb-8 border border-gray-700">
+                    <div class="bg-gradient-to-r from-pink-500 to-cyan-500 h-full rounded-full transition-all duration-300" style="width: ${progress}%"></div>
                 </div>
                 ${contentHtml}
             `);
@@ -340,81 +371,42 @@
                         <div class="w-3/4 bg-gray-800 h-2 mt-3 rounded overflow-hidden"><div id="still-prog" class="bg-purple-600 h-full w-0 transition-all duration-100"></div></div>
                     </div>
                 `;
-                const abyss = document.getElementById('abyss');
-                const timerText = document.getElementById('still-timer');
-                const prog = document.getElementById('still-prog');
-                const eye = document.getElementById('abyss-eye');
-
-                let stillTime = 0;
-                let lastX = null;
-                let lastY = null;
-                let isInside = false;
-                let timerInterval = null;
-                let win = false;
+                const abyss = document.getElementById('abyss'), timerText = document.getElementById('still-timer'), prog = document.getElementById('still-prog'), eye = document.getElementById('abyss-eye');
+                let stillTime = 0, lastX = null, lastY = null, isInside = false, timerInterval = null, win = false;
 
                 const resetStare = () => {
                     if (win) return;
-                    stillTime = 0;
-                    timerText.innerText = '0.0';
-                    prog.style.width = '0%';
-                    eye.classList.remove('text-purple-700', 'fa-eye');
-                    eye.classList.add('text-red-500', 'fa-dizzy'); // 颤抖时眼球变红变晕
+                    stillTime = 0; timerText.innerText = '0.0'; prog.style.width = '0%';
+                    eye.classList.replace('text-purple-700', 'text-red-500'); eye.classList.replace('fa-eye', 'fa-dizzy');
                     abyss.classList.add('scale-110', 'border-red-500', 'shadow-[0_0_30px_rgba(239,68,68,0.8)]');
-                    abyss.classList.remove('border-purple-600', 'shadow-[0_0_30px_rgba(147,51,234,0.5)]');
                     setTimeout(() => {
                         if (!win) {
-                            eye.classList.add('text-purple-700', 'fa-eye');
-                            eye.classList.remove('text-red-500', 'fa-dizzy');
+                            eye.classList.replace('text-red-500', 'text-purple-700'); eye.classList.replace('fa-dizzy', 'fa-eye');
                             abyss.classList.remove('scale-110', 'border-red-500', 'shadow-[0_0_30px_rgba(239,68,68,0.8)]');
-                            abyss.classList.add('border-purple-600', 'shadow-[0_0_30px_rgba(147,51,234,0.5)]');
                         }
                     }, 300);
                 };
-
                 const handleMove = (x, y) => {
                     if (!isInside || win) return;
-                    if (lastX !== null && lastY !== null) {
-                        // 允许极小的像素抖动（防误触），大于2个像素则判定为移动
-                        const dist = Math.abs(x - lastX) + Math.abs(y - lastY);
-                        if (dist > 2) { 
-                            resetStare();
-                        }
-                    }
-                    lastX = x;
-                    lastY = y;
+                    if (lastX !== null && lastY !== null && (Math.abs(x - lastX) + Math.abs(y - lastY) > 2)) resetStare();
+                    lastX = x; lastY = y;
                 };
 
-                // 鼠标事件
-                abyss.addEventListener('mouseenter', () => { isInside = true; });
+                abyss.addEventListener('mouseenter', () => isInside = true);
                 abyss.addEventListener('mouseleave', () => { isInside = false; resetStare(); lastX = null; lastY = null; });
-                window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
-
-                // 触摸事件
-                abyss.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    isInside = true;
-                    lastX = e.touches[0].clientX;
-                    lastY = e.touches[0].clientY;
-                }, { passive: false });
-                window.addEventListener('touchmove', (e) => {
-                    if(isInside) e.preventDefault();
-                    handleMove(e.touches[0].clientX, e.touches[0].clientY);
-                }, { passive: false });
+                window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+                abyss.addEventListener('touchstart', e => { e.preventDefault(); isInside = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }, { passive: false });
+                window.addEventListener('touchmove', e => { if(isInside) e.preventDefault(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
                 abyss.addEventListener('touchend', () => { isInside = false; resetStare(); lastX = null; lastY = null; });
 
                 timerInterval = setInterval(() => {
                     if (isInside && !win) {
-                        stillTime += 0.1;
-                        timerText.innerText = stillTime.toFixed(1);
-                        prog.style.width = Math.min((stillTime / 3) * 100, 100) + '%';
+                        stillTime += 0.1; timerText.innerText = stillTime.toFixed(1); prog.style.width = Math.min((stillTime / 3) * 100, 100) + '%';
                         if (stillTime >= 3.0) {
-                            win = true;
-                            clearInterval(timerInterval);
-                            eye.classList.remove('fa-eye', 'text-purple-700');
-                            eye.classList.add('fa-check-circle', 'text-green-400');
-                            abyss.classList.remove('border-purple-600', 'shadow-[0_0_30px_rgba(147,51,234,0.5)]');
-                            abyss.classList.add('border-green-400', 'shadow-[0_0_50px_rgba(74,222,128,0.8)]');
-                            setTimeout(() => handleAnswer(10), 1000);
+                            win = true; clearInterval(timerInterval);
+                            eye.classList.replace('fa-eye', 'fa-check-circle'); eye.classList.replace('text-purple-700', 'text-green-400');
+                            abyss.classList.replace('border-purple-600', 'border-green-400');
+                            setTimeout(() => handleAnswer(15), 1000);
                         }
                     }
                 }, 100);
@@ -426,22 +418,12 @@
                     <input type="text" id="weird-input" placeholder="随便打点什么..." class="w-full p-4 bg-gray-900 border-2 border-cyan-500 rounded-lg text-2xl text-center focus:outline-none">
                     <p class="mt-4 text-sm text-gray-500">已输入字符: <span id="char-count">0</span>/5</p>
                 `;
-                const input = document.getElementById('weird-input');
-                const countSpan = document.getElementById('char-count');
+                const input = document.getElementById('weird-input'), countSpan = document.getElementById('char-count');
                 let count = 0;
-                
-                input.addEventListener('input', (e) => {
-                    count++;
-                    countSpan.innerText = count;
-                    let weirdString = '';
-                    for(let i=0; i<count; i++) weirdString += emojis[Math.floor(Math.random() * emojis.length)];
-                    input.value = weirdString;
-                    
-                    if (count >= 5) {
-                        input.disabled = true;
-                        input.classList.add('border-pink-500');
-                        setTimeout(() => handleAnswer(10), 500);
-                    }
+                input.addEventListener('input', () => {
+                    count++; countSpan.innerText = count;
+                    input.value = Array(count).fill(0).map(()=>emojis[Math.floor(Math.random() * emojis.length)]).join('');
+                    if (count >= 5) { input.disabled = true; input.classList.add('border-pink-500'); setTimeout(() => handleAnswer(15), 500); }
                 });
             }
 
@@ -453,38 +435,20 @@
                     </div>
                     <div class="w-full bg-gray-700 h-2 rounded"><div id="hold-progress" class="bg-green-400 h-full rounded w-0"></div></div>
                 `;
-                const slider = document.getElementById('c-slider');
-                const prog = document.getElementById('hold-progress');
-                let holdTime = 0;
-                let isDragging = false;
-                
-                slider.addEventListener('mousedown', () => isDragging = true);
-                slider.addEventListener('touchstart', () => isDragging = true);
-                window.addEventListener('mouseup', () => isDragging = false);
-                window.addEventListener('touchend', () => isDragging = false);
+                const slider = document.getElementById('c-slider'), prog = document.getElementById('hold-progress');
+                let holdTime = 0, isDragging = false;
+                slider.addEventListener('mousedown', () => isDragging = true); slider.addEventListener('touchstart', () => isDragging = true);
+                window.addEventListener('mouseup', () => isDragging = false); window.addEventListener('touchend', () => isDragging = false);
 
                 let interval = setInterval(() => {
-                    if(!isDragging && Math.random() > 0.3) {
-                         slider.value = parseInt(slider.value) + (Math.random() - 0.5) * 40;
-                    } else if (isDragging) {
-                         slider.value = parseInt(slider.value) + (Math.random() - 0.5) * 10;
-                    }
+                    if(!isDragging && Math.random() > 0.3) slider.value = parseInt(slider.value) + (Math.random() - 0.5) * 40;
+                    else if (isDragging) slider.value = parseInt(slider.value) + (Math.random() - 0.5) * 10;
 
                     const val = parseInt(slider.value);
-                    if (val >= 40 && val <= 60) {
-                        holdTime += 100;
-                    } else {
-                        holdTime = Math.max(0, holdTime - 50);
-                    }
-                    
+                    if (val >= 40 && val <= 60) holdTime += 100; else holdTime = Math.max(0, holdTime - 50);
                     prog.style.width = (holdTime / 2000 * 100) + '%';
 
-                    if (holdTime >= 2000) {
-                        clearInterval(interval);
-                        prog.classList.replace('bg-green-400', 'bg-pink-500');
-                        slider.disabled = true;
-                        setTimeout(() => handleAnswer(10), 500);
-                    }
+                    if (holdTime >= 2000) { clearInterval(interval); prog.classList.replace('bg-green-400', 'bg-pink-500'); slider.disabled = true; setTimeout(() => handleAnswer(15), 500); }
                 }, 100);
             }
 
@@ -493,121 +457,42 @@
                     <div id="game-container" class="relative w-full bg-gray-900 rounded-lg flex flex-col items-center justify-center p-6 h-64 overflow-hidden select-none border border-amber-900/50">
                         <div id="merit-msg" class="absolute top-4 text-sm text-gray-500 transition-colors duration-300">心诚则灵，勿生贪念</div>
                         <div id="merit-count" class="text-3xl font-bold text-amber-500 mb-6 font-mono z-10 drop-shadow-md">功德: 0</div>
-                        
-                        <!-- 木鱼主体 -->
                         <div id="muyu" class="relative w-28 h-20 bg-gradient-to-br from-amber-700 to-amber-900 rounded-full cursor-pointer flex items-center justify-center shadow-[0_10px_20px_rgba(0,0,0,0.5),inset_0_3px_5px_rgba(255,255,255,0.2)] transition-transform active:scale-95 z-10">
                             <div class="absolute w-16 h-6 border-t-4 border-amber-950/40 rounded-full top-2"></div>
                             <div class="absolute w-2 h-2 bg-amber-950/30 rounded-full right-4 top-8"></div>
                         </div>
-                        
                         <button id="finish-btn" class="mt-8 px-6 py-2 bg-gray-700 rounded text-gray-300 font-bold opacity-50 cursor-not-allowed transition-all z-10">功德圆满</button>
                     </div>
                 `;
-                const box = document.getElementById('game-container');
-                const muyu = document.getElementById('muyu');
-                const countDisplay = document.getElementById('merit-count');
-                const finishBtn = document.getElementById('finish-btn');
-                const msgDisplay = document.getElementById('merit-msg');
-                
-                let merits = 0;
-                let gameOver = false;
+                const box = document.getElementById('game-container'), muyu = document.getElementById('muyu'), countDisplay = document.getElementById('merit-count'), finishBtn = document.getElementById('finish-btn'), msgDisplay = document.getElementById('merit-msg');
+                let merits = 0, gameOver = false;
 
                 const createFloatingText = (x, y) => {
-                    const el = document.createElement('div');
-                    el.innerText = '功德+1';
-                    el.className = 'absolute text-amber-400 font-bold pointer-events-none transition-all duration-700 ease-out z-20 text-lg drop-shadow-md';
-                    
-                    // 让文字在敲击点附近随机稍微偏移
-                    const offsetX = (Math.random() - 0.5) * 40;
-                    el.style.left = (x + offsetX) + 'px';
-                    el.style.top = y + 'px';
-                    el.style.transform = 'translate(-50%, -50%)';
-                    el.style.opacity = '1';
-                    box.appendChild(el);
-
-                    // 触发浏览器重绘
-                    void el.offsetWidth;
-
-                    // 向上飘逸并淡出
-                    el.style.top = (y - 80) + 'px';
-                    el.style.opacity = '0';
-
-                    setTimeout(() => el.remove(), 700);
+                    const el = document.createElement('div'); el.innerText = '功德+1'; el.className = 'absolute text-amber-400 font-bold pointer-events-none transition-all duration-700 ease-out z-20 text-lg drop-shadow-md';
+                    el.style.left = (x + (Math.random() - 0.5) * 40) + 'px'; el.style.top = y + 'px'; el.style.transform = 'translate(-50%, -50%)'; el.style.opacity = '1';
+                    box.appendChild(el); void el.offsetWidth; el.style.top = (y - 80) + 'px'; el.style.opacity = '0'; setTimeout(() => el.remove(), 700);
                 };
 
                 const handleHit = (e) => {
                     if(gameOver) return;
+                    let clientX = e.clientX || (e.touches && e.touches[0].clientX), clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                    if(!clientX) { const rect = box.getBoundingClientRect(); clientX = rect.left + rect.width/2; clientY = rect.top + rect.height/2; }
+                    const rect = box.getBoundingClientRect(); createFloatingText(clientX - rect.left, clientY - rect.top); merits++;
                     
-                    // 获取点击坐标 (兼容触屏和鼠标)
-                    let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                    let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                    
-                    if(!clientX || !clientY) {
-                        const rect = box.getBoundingClientRect();
-                        clientX = rect.left + rect.width / 2;
-                        clientY = rect.top + rect.height / 2;
-                    }
-
-                    const rect = box.getBoundingClientRect();
-                    const relX = clientX - rect.left;
-                    const relY = clientY - rect.top;
-
-                    createFloatingText(relX, relY);
-                    merits++;
-                    
-                    // 核心判断逻辑
                     if (merits > 49) {
-                        merits = 0;
-                        countDisplay.innerText = "功德: 0";
-                        msgDisplay.innerText = "贪欲大起，功德尽失！重头来过";
-                        msgDisplay.classList.replace('text-gray-500', 'text-red-500');
-                        msgDisplay.classList.replace('text-amber-400', 'text-red-500');
-                        box.classList.add('bg-red-900/30');
-                        
-                        setTimeout(() => {
-                            msgDisplay.classList.replace('text-red-500', 'text-gray-500');
-                            box.classList.remove('bg-red-900/30');
-                            msgDisplay.innerText = "心诚则灵，勿生贪念";
-                        }, 1500);
-                    } else {
-                        countDisplay.innerText = `功德: ${merits}`;
-                    }
+                        merits = 0; countDisplay.innerText = "功德: 0"; msgDisplay.innerText = "贪欲大起，功德尽失！重头来过"; msgDisplay.classList.replace('text-gray-500', 'text-red-500'); msgDisplay.classList.replace('text-amber-400', 'text-red-500'); box.classList.add('bg-red-900/30');
+                        setTimeout(() => { msgDisplay.classList.replace('text-red-500', 'text-gray-500'); box.classList.remove('bg-red-900/30'); msgDisplay.innerText = "心诚则灵，勿生贪念"; }, 1500);
+                    } else { countDisplay.innerText = `功德: ${merits}`; }
 
-                    // 达到精确的49下时激活按钮
                     if (merits === 49) {
-                        finishBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-700', 'text-gray-300');
-                        finishBtn.classList.add('hover:bg-amber-500', 'bg-amber-600', 'text-white', 'shadow-[0_0_15px_rgba(245,158,11,0.6)]');
-                        msgDisplay.innerText = "功德已满，请速速离场";
-                        msgDisplay.classList.replace('text-gray-500', 'text-amber-400');
+                        finishBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-700', 'text-gray-300'); finishBtn.classList.add('hover:bg-amber-500', 'bg-amber-600', 'text-white', 'shadow-[0_0_15px_rgba(245,158,11,0.6)]'); msgDisplay.innerText = "功德已满，请速速离场"; msgDisplay.classList.replace('text-gray-500', 'text-amber-400');
                     } else {
-                        finishBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-700', 'text-gray-300');
-                        finishBtn.classList.remove('hover:bg-amber-500', 'bg-amber-600', 'text-white', 'shadow-[0_0_15px_rgba(245,158,11,0.6)]');
-                        if (merits > 0 && merits < 49 && msgDisplay.classList.contains('text-amber-400')) {
-                            msgDisplay.classList.replace('text-amber-400', 'text-gray-500');
-                            msgDisplay.innerText = "心诚则灵，勿生贪念";
-                        }
+                        finishBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-700', 'text-gray-300'); finishBtn.classList.remove('hover:bg-amber-500', 'bg-amber-600', 'text-white', 'shadow-[0_0_15px_rgba(245,158,11,0.6)]');
+                        if (merits > 0 && merits < 49 && msgDisplay.classList.contains('text-amber-400')) { msgDisplay.classList.replace('text-amber-400', 'text-gray-500'); msgDisplay.innerText = "心诚则灵，勿生贪念"; }
                     }
                 };
-
-                // 绑定点击和触摸事件
-                muyu.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    handleHit(e);
-                });
-                
-                muyu.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    handleHit(e);
-                }, { passive: false });
-
-                // 提交按钮事件
-                finishBtn.addEventListener('click', () => {
-                    if (merits === 49 && !gameOver) {
-                        gameOver = true;
-                        finishBtn.innerText = "🙏 善哉善哉";
-                        setTimeout(() => handleAnswer(15), 1000);
-                    }
-                });
+                muyu.addEventListener('mousedown', e => { e.preventDefault(); handleHit(e); }); muyu.addEventListener('touchstart', e => { e.preventDefault(); handleHit(e); }, { passive: false });
+                finishBtn.addEventListener('click', () => { if (merits === 49 && !gameOver) { gameOver = true; finishBtn.innerText = "🙏 善哉善哉"; setTimeout(() => handleAnswer(15), 1000); } });
             }
 
             else if (gameId === 'dont_click') {
@@ -617,33 +502,185 @@
                         <div class="absolute bottom-2 text-white text-xl font-mono" id="countdown">5</div>
                     </div>
                 `;
-                const btn = document.getElementById('tempt-btn');
-                const cd = document.getElementById('countdown');
-                let time = 5;
-                let clicked = false;
-                
+                const btn = document.getElementById('tempt-btn'), cd = document.getElementById('countdown');
+                let time = 5, clicked = false;
                 setTimeout(() => { btn.style.opacity = '1'; btn.style.transform = 'scale(1)'; }, 1000);
-                
-                btn.addEventListener('click', () => {
-                    clicked = true;
-                    btn.innerText = "你点它干嘛？";
-                    btn.classList.replace('bg-red-600', 'bg-gray-600');
-                    cd.innerText = "失败";
-                    setTimeout(() => handleAnswer(0), 1000); 
-                });
-
+                btn.addEventListener('click', () => { clicked = true; btn.innerText = "你点它干嘛？"; btn.classList.replace('bg-red-600', 'bg-gray-600'); cd.innerText = "失败"; setTimeout(() => handleAnswer(0), 1000); });
                 let interval = setInterval(() => {
                     if (clicked) { clearInterval(interval); return; }
-                    time--;
-                    cd.innerText = time;
-                    if (time <= 0) {
-                        clearInterval(interval);
-                        btn.style.opacity = '0';
-                        cd.innerText = "意志坚定！";
-                        cd.classList.add('text-green-400');
-                        setTimeout(() => handleAnswer(10), 1000); 
-                    }
+                    time--; cd.innerText = time;
+                    if (time <= 0) { clearInterval(interval); btn.style.opacity = '0'; cd.innerText = "意志坚定！"; cd.classList.add('text-green-400'); setTimeout(() => handleAnswer(15), 1000); }
                 }, 1000);
+            }
+
+            else if (gameId === 'catch_btn') {
+                container.innerHTML = `
+                    <div id="catch-zone" class="relative w-full h-64 bg-gray-900 rounded-lg overflow-hidden border border-cyan-500">
+                        <button id="run-btn" class="absolute px-6 py-2 bg-pink-500 rounded-full text-white font-bold transition-all duration-[50ms] shadow-[0_0_15px_#ff00ff]">抓住我!</button>
+                        <div class="absolute bottom-2 right-2 text-gray-500 text-sm">剩余时间: <span id="catch-time">10</span>s</div>
+                    </div>
+                `;
+                const btn = document.getElementById('run-btn'), timeSpan = document.getElementById('catch-time');
+                let timeLeft = 10, isCaught = false;
+                btn.style.left = '40%'; btn.style.top = '40%';
+                const moveBtn = () => { if(!isCaught) { btn.style.left = Math.random() * 75 + '%'; btn.style.top = Math.random() * 75 + '%'; } };
+                btn.addEventListener('mouseenter', moveBtn); btn.addEventListener('touchstart', e => { e.preventDefault(); moveBtn(); });
+                btn.addEventListener('click', () => { isCaught = true; btn.innerText = "被抓了!"; btn.classList.replace('bg-pink-500', 'bg-green-500'); setTimeout(() => handleAnswer(15), 1000); });
+                let timer = setInterval(() => {
+                    if(isCaught) { clearInterval(timer); return; }
+                    timeLeft--; timeSpan.innerText = timeLeft;
+                    if(timeLeft <= 0) { clearInterval(timer); btn.innerText = "太慢了"; btn.removeEventListener('mouseenter', moveBtn); setTimeout(() => handleAnswer(0), 1000); }
+                }, 1000);
+            }
+
+            else if (gameId === 'color_trap') {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center w-full bg-gray-900 rounded-lg p-8">
+                        <p class="text-gray-400 mb-4">请点击下方所表示上方文字<span class="text-white font-bold">实际颜色</span>的选项</p>
+                        <div class="text-6xl font-black mb-8 text-blue-500 tracking-widest">红色</div>
+                        <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
+                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="red">红色</button>
+                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="yellow">黄色</button>
+                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="green">绿色</button>
+                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="blue">蓝色</button>
+                        </div>
+                    </div>
+                `;
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.addEventListener('click', e => {
+                        if(e.target.getAttribute('data-color') === 'blue') { e.target.classList.add('bg-green-600', 'text-white'); setTimeout(() => handleAnswer(15), 800); }
+                        else { e.target.classList.add('bg-red-600', 'text-white'); setTimeout(() => handleAnswer(0), 800); }
+                    });
+                });
+            }
+
+            else if (gameId === 'spam_click') {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center w-full py-8 select-none touch-none">
+                        <p class="text-cyan-400 mb-6">10秒内狂点50次！</p>
+                        <button id="spam-btn" class="w-32 h-32 rounded-full bg-gradient-to-tr from-pink-600 to-red-500 text-white font-black text-4xl shadow-[0_0_20px_rgba(239,68,68,0.6)] active:scale-95 transition-transform">0</button>
+                        <div class="w-full max-w-xs bg-gray-800 h-3 rounded-full mt-8 overflow-hidden"><div id="spam-bar" class="bg-cyan-400 h-full w-full"></div></div>
+                    </div>
+                `;
+                const btn = document.getElementById('spam-btn'), bar = document.getElementById('spam-bar');
+                let count = 0, started = false, timeLeft = 10, timer;
+                const pressEvent = e => {
+                    e.preventDefault();
+                    if(!started) {
+                        started = true;
+                        timer = setInterval(() => {
+                            timeLeft -= 0.1; bar.style.width = Math.max(0, (timeLeft/10*100)) + '%';
+                            if(timeLeft <= 0) { clearInterval(timer); btn.disabled = true; handleAnswer(count >= 50 ? 15 : 0); }
+                        }, 100);
+                    }
+                    if(timeLeft > 0) {
+                        count++; btn.innerText = count;
+                        if(count >= 50) { clearInterval(timer); btn.disabled = true; btn.classList.replace('from-pink-600', 'from-green-500'); btn.classList.replace('to-red-500', 'to-emerald-400'); setTimeout(() => handleAnswer(15), 1000); }
+                    }
+                };
+                btn.addEventListener('mousedown', pressEvent); btn.addEventListener('touchstart', pressEvent, { passive: false });
+            }
+
+            else if (gameId === 'hold_breath') {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center py-10 w-full select-none">
+                        <p class="text-gray-400 mb-6 text-center">按住按钮，凭直觉在<span class="text-pink-500 font-bold">精确的3.0秒</span>时松开。(误差±0.2秒)</p>
+                        <button id="hold-btn" class="px-10 py-6 bg-purple-700 rounded-2xl text-white font-bold text-xl shadow-[0_10px_0_#4c1d95] active:translate-y-2 active:shadow-[0_0px_0_#4c1d95] transition-all touch-none">按住我</button>
+                        <p id="hold-res" class="mt-8 text-2xl font-mono text-cyan-400 h-8"></p>
+                    </div>
+                `;
+                const btn = document.getElementById('hold-btn'), res = document.getElementById('hold-res');
+                let startT = 0, done = false;
+                const down = e => { if(!done) { e.preventDefault(); startT = Date.now(); res.innerText = "呼吸..."; } };
+                const up = e => {
+                    if(done || !startT) return;
+                    e.preventDefault(); let diff = (Date.now() - startT) / 1000; startT = 0; done = true; res.innerText = diff.toFixed(2) + ' s';
+                    if(diff >= 2.8 && diff <= 3.2) { res.classList.add('text-green-400'); setTimeout(() => handleAnswer(15), 1500); }
+                    else { res.classList.add('text-red-500'); setTimeout(() => handleAnswer(0), 1500); }
+                };
+                btn.addEventListener('mousedown', down); btn.addEventListener('touchstart', down); window.addEventListener('mouseup', up); window.addEventListener('touchend', up);
+            }
+
+            else if (gameId === 'fake_loading') {
+                container.innerHTML = `
+                    <div class="w-full py-12 px-4 relative">
+                        <p class="text-center text-gray-300 mb-4">正在加载下一题...</p>
+                        <div class="w-full bg-gray-800 rounded-full h-4 overflow-hidden shadow-inner relative"><div id="fake-bar" class="bg-gradient-to-r from-pink-500 to-cyan-500 h-full w-0 transition-all duration-[3000ms] ease-out"></div></div>
+                        <p id="fake-pct" class="text-center mt-2 font-mono text-pink-400">0%</p>
+                        <div id="tiny-pixel" class="absolute w-3 h-3 bg-white/10 rounded-full cursor-pointer hover:bg-white transition-colors z-10" style="top: 20px; right: 20px;"></div>
+                    </div>
+                `;
+                const bar = document.getElementById('fake-bar'), pct = document.getElementById('fake-pct'), px = document.getElementById('tiny-pixel');
+                setTimeout(() => {
+                    bar.style.width = '99%'; let p = 0;
+                    let intv = setInterval(() => { p += Math.floor(Math.random() * 5); if(p >= 99) { p = 99; clearInterval(intv); } pct.innerText = p + '%'; }, 100);
+                }, 100);
+                px.addEventListener('click', () => { bar.style.transitionDuration = '200ms'; bar.style.width = '100%'; pct.innerText = '100%'; pct.classList.replace('text-pink-400', 'text-green-400'); setTimeout(() => handleAnswer(15), 1000); });
+            }
+
+            else if (gameId === 'volume_troll') {
+                container.innerHTML = `
+                    <div class="w-full py-10 px-6 flex flex-col items-center">
+                        <p class="text-gray-300 mb-8 text-center">强迫症测试：请将音量精确滑动到 <span class="text-white font-bold text-2xl">50</span></p>
+                        <input type="range" id="vol-slider" min="0" max="100" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="mt-6 text-5xl font-black font-mono text-cyan-400" id="vol-val">0</div>
+                    </div>
+                `;
+                const slider = document.getElementById('vol-slider'), val = document.getElementById('vol-val');
+                let tries = 0;
+                slider.addEventListener('input', e => {
+                    let v = parseInt(e.target.value);
+                    if(v === 50) {
+                        tries++; v = Math.random() > 0.5 ? 49 : 51; slider.value = v;
+                        if(tries > 4) { slider.value = 50; val.innerText = "50"; val.classList.replace('text-cyan-400', 'text-green-400'); slider.disabled = true; setTimeout(() => handleAnswer(15), 1000); return; }
+                    }
+                    val.innerText = v;
+                });
+            }
+
+            else if (gameId === 'dont_do_anything') {
+                container.innerHTML = `
+                    <div class="text-center py-10 w-full">
+                        <h3 class="text-3xl font-bold text-red-500 mb-4 glitch-text">别动！</h3>
+                        <p class="text-gray-400 mb-8">松开鼠标，放下手机，不要进行任何操作。<br>保持绝对静默 3 秒。</p>
+                        <div class="w-full max-w-sm mx-auto bg-gray-800 h-2 rounded overflow-hidden"><div id="silence-bar" class="bg-cyan-500 h-full w-0"></div></div>
+                    </div>
+                `;
+                const bar = document.getElementById('silence-bar');
+                let stillT = 0, done = false;
+                let timer = setInterval(() => {
+                    if(done) return; stillT += 0.1; bar.style.width = (stillT/3 * 100) + '%';
+                    if(stillT >= 3) { done = true; clearInterval(timer); cleanup(); bar.classList.replace('bg-cyan-500', 'bg-green-500'); setTimeout(() => handleAnswer(15), 1000); }
+                }, 100);
+                const fail = () => {
+                    if(done || stillT <= 0.3) return;
+                    stillT = 0; bar.classList.replace('bg-cyan-500', 'bg-red-500'); setTimeout(() => { if(!done) bar.classList.replace('bg-red-500', 'bg-cyan-500'); }, 200);
+                };
+                const cleanup = () => { window.removeEventListener('mousemove', fail); window.removeEventListener('keydown', fail); window.removeEventListener('touchmove', fail); };
+                window.addEventListener('mousemove', fail); window.addEventListener('keydown', fail); window.addEventListener('touchmove', fail);
+            }
+
+            else if (gameId === 'captcha_troll') {
+                container.innerHTML = `
+                    <div class="text-center py-4 w-full">
+                        <p class="text-white mb-4">请点击验证：选出所有<span class="text-pink-500 font-bold">抽象</span>的图片</p>
+                        <div class="grid grid-cols-3 gap-2 w-full max-w-[240px] mx-auto mb-6">
+                            ${Array(9).fill(0).map((_, i) => `<div class="bg-gray-700 w-full aspect-square cursor-pointer border-2 border-transparent hover:border-gray-500 cap-box transition-colors"></div>`).join('')}
+                        </div>
+                        <button id="cap-verify" class="px-6 py-2 bg-blue-600 rounded text-white font-bold opacity-50 cursor-not-allowed transition-transform">验证</button>
+                    </div>
+                `;
+                let clicks = 0; const btn = document.getElementById('cap-verify');
+                document.querySelectorAll('.cap-box').forEach(box => {
+                    box.addEventListener('click', e => {
+                        const t = e.target;
+                        if(t.classList.contains('bg-gray-700')) t.classList.replace('bg-gray-700', 'bg-pink-500'); else t.classList.replace('bg-pink-500', 'bg-gray-700');
+                        clicks++;
+                        if(clicks === 2 || clicks === 4) btn.style.transform = `translate(${(Math.random()-0.5)*150}px, ${(Math.random()-0.5)*50}px)`;
+                        if(clicks >= 5) { btn.classList.remove('opacity-50', 'cursor-not-allowed'); btn.style.transform = 'translate(0,0)'; }
+                    });
+                });
+                btn.addEventListener('click', () => { if(clicks >= 5) { btn.innerText = "验证通过"; btn.classList.replace('bg-blue-600', 'bg-green-500'); setTimeout(() => handleAnswer(15), 800); } });
             }
         };
 
@@ -672,19 +709,9 @@
             `);
 
             if (state.score > 0) {
-                const scoreData = {
-                    name: state.userName,
-                    score: state.score,
-                    rankTitle: rank.title,
-                    timestamp: new Date().getTime()
-                };
+                const scoreData = { name: state.userName, score: state.score, rankTitle: rank.title, timestamp: new Date().getTime() };
                 try {
-                    // 调用 Cloudflare Functions API 存储数据
-                    await fetch('/api/scores', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(scoreData)
-                    });
+                    await fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(scoreData) });
                     state.usingLocal = false;
                 } catch (e) {
                     console.warn("API请求失败，降级为本地存储", e);
@@ -693,13 +720,33 @@
                 }
             }
 
-            document.getElementById('viewLdbBtn').addEventListener('click', () => {
-                state.currentStep = 21;
-                renderLeaderboard();
-            });
-            document.getElementById('retryBtn').addEventListener('click', () => {
-                renderHome(); 
-            });
+            document.getElementById('viewLdbBtn').addEventListener('click', () => renderLeaderboard());
+            document.getElementById('retryBtn').addEventListener('click', () => renderHome());
+        };
+
+        const renderLeaderboardList = (data) => {
+            const contentDiv = document.getElementById('ldb-content');
+            if (!contentDiv) return;
+            
+            if (data.length === 0) {
+                contentDiv.innerHTML = '<div class="text-center text-gray-500 py-10">这里还是一片虚无...</div>'; return;
+            }
+
+            contentDiv.innerHTML = data.map((item, index) => {
+                let medal = index === 0 ? '<i class="fas fa-crown text-yellow-400 ml-2"></i>' : (index === 1 ? '<i class="fas fa-medal text-gray-300 ml-2"></i>' : (index === 2 ? '<i class="fas fa-medal text-amber-600 ml-2"></i>' : ''));
+                return `
+                    <div class="flex justify-between items-center p-3 rounded-lg bg-gray-800/50 border border-gray-700 hover:border-cyan-500/50 transition">
+                        <div class="flex items-center">
+                            <span class="w-6 text-gray-500 font-mono text-sm">${index + 1}.</span>
+                            <span class="font-bold ml-2 text-gray-200">${escapeHtml(item.name)}</span>${medal}
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs text-pink-400 hidden sm:inline">${item.rankTitle || ''}</span>
+                            <span class="font-bold text-cyan-300 font-mono">${item.score} pt</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         };
 
         const renderLeaderboard = async () => {
@@ -718,56 +765,18 @@
             document.getElementById('backBtn').addEventListener('click', renderResult);
 
             try {
-                // 请求 Cloudflare API 获取最新榜单
                 const response = await fetch('/api/scores');
                 if (!response.ok) throw new Error('网络维度断开连接');
-                
                 let data = await response.json();
-                
-                // 如果云端还没数据，提供一点默认数据避免太干瘪
-                if (data.length === 0) {
-                    data = getLocalScores(); 
-                }
-                
+                if (data.length === 0) data = getLocalScores(); 
                 renderLeaderboardList(data);
             } catch (error) {
                 console.warn("无法连接到抽象排行榜服务器，显示本地幻觉...", error);
-                let data = getLocalScores();
-                data.sort((a, b) => b.score - a.score);
-                renderLeaderboardList(data);
+                renderLeaderboardList(getLocalScores());
             }
         };
 
-        const alertCustom = (title, message) => {
-            const overlay = document.createElement('div');
-            overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm';
-            overlay.innerHTML = `
-                <div class="glass-panel p-6 max-w-sm w-full text-center border-pink-500 transform transition-all scale-100">
-                    <h3 class="text-xl font-bold text-pink-500 mb-2">${title}</h3>
-                    <p class="text-gray-300 mb-6">${message}</p>
-                    <button id="closeModalBtn" class="px-6 py-2 rounded btn-abstract w-full">知道了</button>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            document.getElementById('closeModalBtn').addEventListener('click', () => {
-                document.body.removeChild(overlay);
-            });
-        };
-
-        const escapeHtml = (unsafe) => {
-            return (unsafe||"").toString()
-                 .replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
-        };
-
-        const initApp = async () => {
-            console.log("Connected to the void as:", state.userId);
-            renderHome();
-        };
-
+        const initApp = () => renderHome();
         window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
