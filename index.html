@@ -122,7 +122,102 @@
             score: 0,
             userName: "",
             userId: "user_" + Math.random().toString(36).substr(2, 9),
-            usingLocal: false
+            usingLocal: false,
+            gameRetries: 3
+        };
+
+        // 全局游戏管理器：确保重试时清除残留事件和定时器
+        let gameIntervals = [];
+        let gameTimeouts = [];
+        let gameListeners = [];
+
+        const cleanupGame = () => {
+            gameIntervals.forEach(clearInterval); gameIntervals = [];
+            gameTimeouts.forEach(clearTimeout); gameTimeouts = [];
+            gameListeners.forEach(l => l.target.removeEventListener(l.type, l.fn, l.options)); gameListeners = [];
+        };
+
+        const setGameInterval = (fn, t) => { const id = setInterval(fn, t); gameIntervals.push(id); return id; };
+        const setGameTimeout = (fn, t) => { const id = setTimeout(fn, t); gameTimeouts.push(id); return id; };
+        const addGameListener = (target, type, fn, options) => { target.addEventListener(type, fn, options); gameListeners.push({target, type, fn, options}); };
+
+        const failMessages = [
+            "你的大脑还不够抽象，请再试一次",
+            "检测到正常人思维，正在清除...",
+            "抽象能量不足，请充值",
+            "建议重新投胎做一只卡皮巴拉",
+            "你的逻辑太严密了，这很危险",
+            "碳基生物的局限性暴露无遗"
+        ];
+        const passEmojis = ['🤡', '👽', '🧠', '🧻', '🌀', '👁️', '🗿', '🐒', '💩', '✨', '🔥'];
+
+        const triggerPass = (score) => {
+            cleanupGame();
+            // 白屏闪烁特效
+            const flash = document.createElement('div');
+            flash.className = 'fixed inset-0 bg-white z-[100] pointer-events-none transition-opacity duration-[800ms] opacity-100';
+            document.body.appendChild(flash);
+            setTimeout(() => flash.classList.replace('opacity-100', 'opacity-0'), 50);
+            setTimeout(() => flash.remove(), 1000);
+
+            // 巨大随机表情包特效
+            const emoji = document.createElement('div');
+            emoji.innerText = passEmojis[Math.floor(Math.random() * passEmojis.length)];
+            emoji.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] sm:text-[180px] z-[101] transition-all duration-700 transform scale-0 rotate-[-180deg] pointer-events-none drop-shadow-[0_0_30px_rgba(255,0,255,0.8)]';
+            document.body.appendChild(emoji);
+            
+            setTimeout(() => {
+                emoji.classList.replace('scale-0', 'scale-100');
+                emoji.classList.replace('rotate-[-180deg]', 'rotate-0');
+            }, 50);
+
+            setTimeout(() => {
+                emoji.remove();
+                handleAnswer(score); // 结算分数进入下一题
+            }, 1500);
+        };
+
+        const triggerFail = (gameId) => {
+            cleanupGame();
+            state.gameRetries--;
+            
+            if (state.gameRetries <= 0) {
+                // 彻底失败，弹出正常人警告
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-[120] p-4 backdrop-blur-sm';
+                overlay.innerHTML = `
+                    <div class="glass-panel p-6 max-w-sm w-full text-center border-red-500 scale-0 transition-transform duration-300" id="failModal">
+                        <h3 class="text-2xl font-bold text-red-500 mb-4"><i class="fas fa-exclamation-triangle"></i> 警告</h3>
+                        <p class="text-gray-300 mb-6 text-lg">你是纯纯正常人，确定要继续吗？</p>
+                        <button id="skipGameBtn" class="px-6 py-3 rounded btn-abstract w-full bg-red-600 hover:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.5)]">确定 (扣10分跳过)</button>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                setTimeout(() => document.getElementById('failModal').classList.replace('scale-0', 'scale-100'), 10);
+                document.getElementById('skipGameBtn').onclick = () => {
+                    overlay.remove();
+                    handleAnswer(-10); // 扣分并强制下一题
+                };
+            } else {
+                // 嘲讽弹窗重试
+                const msg = failMessages[Math.floor(Math.random() * failMessages.length)];
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-[110] p-4 backdrop-blur-sm';
+                overlay.innerHTML = `
+                    <div class="glass-panel p-6 max-w-sm w-full text-center border-cyan-500 scale-0 transition-transform duration-300" id="failModal">
+                        <h3 class="text-xl font-bold text-cyan-400 mb-4 glitch-text">系统判定</h3>
+                        <p class="text-gray-300 mb-6 text-lg font-bold">${msg}</p>
+                        <p class="text-sm text-pink-500 mb-4 font-mono">剩余重试次数: ${state.gameRetries} / 3</p>
+                        <button id="retryGameBtn" class="px-6 py-2 rounded btn-abstract w-full">领悟抽象</button>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                setTimeout(() => document.getElementById('failModal').classList.replace('scale-0', 'scale-100'), 10);
+                document.getElementById('retryGameBtn').onclick = () => {
+                    overlay.remove();
+                    initGame(gameId); // 干干净净重启当前小游戏
+                };
+            }
         };
 
         const testData = [
@@ -177,7 +272,7 @@
             
             // 小游戏 7、8
             { type: 'game', id: 'color_trap', title: '小游戏：颜色陷阱', desc: '打破视觉惯性。不要管文字写了什么，请点击文字实际所显示的【颜色】。' },
-            { type: 'game', id: 'spam_click', title: '小游戏：帕金森震颤', desc: '在10秒内，以最快的速度疯狂点击按钮50次！' },
+            { type: 'game', id: 'not_apple', title: '小游戏：绝对反常识', desc: '请仔细审题：点击屏幕上最不像苹果的东西。' },
 
             // === 题型6：情景抽象题 ===
             { type: 'q', q: '有人问你“吃饭了吗”，你怎么抽象地回答？', options: [{t:'吃了 / 没吃',s:0}, {t:'刚吃完空气',s:5}, {t:'我在等饭自己来找我',s:10}, {t:'饭已经在我的肚子里了，只是我还没感觉到',s:15}] },
@@ -188,7 +283,7 @@
             { type: 'q', q: '“City不City啊”这句话用来评价什么最合适？', options: [{t:'上海外滩的咖啡馆',s:0}, {t:'纽约时代广场',s:5}, {t:'村头刚铺好的水泥路',s:10}, {t:'穿着人字拖逛大润发',s:15}] },
             
             // 小游戏 9、10
-            { type: 'game', id: 'hold_breath', title: '小游戏：按住憋气', desc: '按住按钮不要松手。你需要凭直觉在【精确的3.0秒】时松开它。' },
+            { type: 'game', id: 'make_bird_fly', title: '小游戏：让鸟飞翔', desc: '不要被常规思维局限，想办法让这只小鸟飞起来。' },
             { type: 'game', id: 'fake_loading', title: '小游戏：虚假进度条', desc: '它卡在99%了，你能找到隐藏的通关机关吗？' },
 
             // === 最终混合题 ===
@@ -200,9 +295,9 @@
             { type: 'q', q: '这道题没有题目，请凭借你的直觉选择正确答案：', options: [{t:'A',s:0}, {t:'C',s:5}, {t:'以上都不对',s:10}, {t:'选C的都是傻子，我选王司徒',s:15}] },
 
             // 最后的考验 11、12、13
-            { type: 'game', id: 'volume_troll', title: '小游戏：音量刺客', desc: '强迫症测试：请将音量滑块精确地停在 50。' },
-            { type: 'game', id: 'dont_do_anything', title: '小游戏：敌不动我不动', desc: '松开鼠标，离开屏幕。什么都不要做。' },
-            { type: 'game', id: 'captcha_troll', title: '小游戏：抽象验证码', desc: '证明你不是机器人。点击验证。' }
+            { type: 'game', id: 'open_door', title: '小游戏：芝麻开门', desc: '' },
+            { type: 'game', id: 'dont_do_anything', title: '小游戏：敌不动我不动', desc: '' },
+            { type: 'game', id: 'reverse_control', title: '小游戏：镜像反向操控', desc: '' }
         ];
 
         const getRank = (score) => {
@@ -300,6 +395,9 @@
         };
 
         const renderTest = () => {
+            cleanupGame(); // 清理上一关的残留
+            state.gameRetries = 3; // 重置小游戏重试次数
+
             if (state.currentStep >= testData.length) {
                 renderResult();
                 return;
@@ -323,8 +421,7 @@
                 `;
             } else if (item.type === 'game') {
                 contentHtml = `
-                    <h2 class="text-xl sm:text-2xl font-bold mb-2 text-cyan-400">${item.title}</h2>
-                    <p class="text-gray-400 text-sm mb-4">${item.desc}</p>
+                    <h2 class="text-xl sm:text-2xl font-bold mb-4 text-cyan-400">${item.title}</h2>
                     <div id="game-area" class="w-full rounded-lg relative flex flex-col items-center justify-center"></div>
                 `;
             }
@@ -352,13 +449,8 @@
             }
         };
 
-        const handleAnswer = (earnedScore) => {
-            state.score += earnedScore;
-            state.currentStep++;
-            renderTest();
-        };
-
         const initGame = (gameId) => {
+            cleanupGame(); // 安全防护
             const container = document.getElementById('game-area');
             
             if (gameId === 'stare_abyss') {
@@ -367,46 +459,35 @@
                         <div id="abyss" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-purple-600 bg-gradient-to-b from-gray-900 to-black flex items-center justify-center cursor-crosshair shadow-[0_0_30px_rgba(147,51,234,0.5)] transition-all">
                             <i class="fas fa-eye text-purple-700 text-3xl sm:text-4xl" id="abyss-eye"></i>
                         </div>
-                        <div class="mt-6 text-gray-400 font-mono text-sm">绝对静止时间: <span id="still-timer">0.0</span>s / 3.0s</div>
+                        <div class="mt-6 text-gray-400 font-mono text-sm"><span id="still-timer">0.0</span>s / 3.0s</div>
                         <div class="w-3/4 bg-gray-800 h-2 mt-3 rounded overflow-hidden"><div id="still-prog" class="bg-purple-600 h-full w-0 transition-all duration-100"></div></div>
                     </div>
                 `;
-                const abyss = document.getElementById('abyss'), timerText = document.getElementById('still-timer'), prog = document.getElementById('still-prog'), eye = document.getElementById('abyss-eye');
-                let stillTime = 0, lastX = null, lastY = null, isInside = false, timerInterval = null, win = false;
+                const abyss = document.getElementById('abyss'), timerText = document.getElementById('still-timer'), prog = document.getElementById('still-prog');
+                let stillTime = 0, lastX = null, lastY = null, isInside = false, win = false, failed = false;
 
-                const resetStare = () => {
-                    if (win) return;
-                    stillTime = 0; timerText.innerText = '0.0'; prog.style.width = '0%';
-                    eye.classList.replace('text-purple-700', 'text-red-500'); eye.classList.replace('fa-eye', 'fa-dizzy');
-                    abyss.classList.add('scale-110', 'border-red-500', 'shadow-[0_0_30px_rgba(239,68,68,0.8)]');
-                    setTimeout(() => {
-                        if (!win) {
-                            eye.classList.replace('text-red-500', 'text-purple-700'); eye.classList.replace('fa-dizzy', 'fa-eye');
-                            abyss.classList.remove('scale-110', 'border-red-500', 'shadow-[0_0_30px_rgba(239,68,68,0.8)]');
-                        }
-                    }, 300);
-                };
                 const handleMove = (x, y) => {
-                    if (!isInside || win) return;
-                    if (lastX !== null && lastY !== null && (Math.abs(x - lastX) + Math.abs(y - lastY) > 2)) resetStare();
+                    if (!isInside || win || failed) return;
+                    if (stillTime > 0.3 && lastX !== null && lastY !== null && (Math.abs(x - lastX) + Math.abs(y - lastY) > 3)) {
+                        failed = true;
+                        triggerFail('stare_abyss');
+                    }
                     lastX = x; lastY = y;
                 };
 
                 abyss.addEventListener('mouseenter', () => isInside = true);
-                abyss.addEventListener('mouseleave', () => { isInside = false; resetStare(); lastX = null; lastY = null; });
-                window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+                abyss.addEventListener('mouseleave', () => { isInside = false; lastX = null; lastY = null; });
+                addGameListener(window, 'mousemove', e => handleMove(e.clientX, e.clientY));
                 abyss.addEventListener('touchstart', e => { e.preventDefault(); isInside = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }, { passive: false });
-                window.addEventListener('touchmove', e => { if(isInside) e.preventDefault(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-                abyss.addEventListener('touchend', () => { isInside = false; resetStare(); lastX = null; lastY = null; });
+                addGameListener(window, 'touchmove', e => { if(isInside) e.preventDefault(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+                abyss.addEventListener('touchend', () => { isInside = false; lastX = null; lastY = null; });
 
-                timerInterval = setInterval(() => {
-                    if (isInside && !win) {
+                setGameInterval(() => {
+                    if (isInside && !win && !failed) {
                         stillTime += 0.1; timerText.innerText = stillTime.toFixed(1); prog.style.width = Math.min((stillTime / 3) * 100, 100) + '%';
                         if (stillTime >= 3.0) {
-                            win = true; clearInterval(timerInterval);
-                            eye.classList.replace('fa-eye', 'fa-check-circle'); eye.classList.replace('text-purple-700', 'text-green-400');
-                            abyss.classList.replace('border-purple-600', 'border-green-400');
-                            setTimeout(() => handleAnswer(15), 1000);
+                            win = true;
+                            triggerPass(15);
                         }
                     }
                 }, 100);
@@ -414,23 +495,23 @@
             
             else if (gameId === 'abstract_typing') {
                 const emojis = ['👽', '👾', '💩', '🧠', '👁️', '🌀', '🎭', '🧻'];
-                container.innerHTML = `
-                    <input type="text" id="weird-input" placeholder="随便打点什么..." class="w-full p-4 bg-gray-900 border-2 border-cyan-500 rounded-lg text-2xl text-center focus:outline-none">
-                    <p class="mt-4 text-sm text-gray-500">已输入字符: <span id="char-count">0</span>/5</p>
-                `;
-                const input = document.getElementById('weird-input'), countSpan = document.getElementById('char-count');
+                container.innerHTML = `<input type="text" id="weird-input" class="w-full p-4 bg-gray-900 border-2 border-cyan-500 rounded-lg text-2xl text-center focus:outline-none">`;
+                const input = document.getElementById('weird-input');
                 let count = 0;
                 input.addEventListener('input', () => {
-                    count++; countSpan.innerText = count;
+                    count++;
                     input.value = Array(count).fill(0).map(()=>emojis[Math.floor(Math.random() * emojis.length)]).join('');
-                    if (count >= 5) { input.disabled = true; input.classList.add('border-pink-500'); setTimeout(() => handleAnswer(15), 500); }
+                    if (count >= 5) { 
+                        input.disabled = true; input.classList.add('border-pink-500'); 
+                        triggerPass(15); 
+                    }
                 });
             }
 
             else if (gameId === 'chaos_slider') {
                 container.innerHTML = `
                     <div class="w-full h-12 bg-gray-800 rounded relative overflow-hidden mb-4 border border-gray-600">
-                        <div class="absolute top-0 bottom-0 left-[40%] right-[40%] bg-green-500/20 border-x border-green-500"></div>
+                        <div class="absolute top-0 bottom-0 left-[40%] right-[40%] bg-green-500/20 border-x border-green-500 pointer-events-none"></div>
                         <input type="range" min="0" max="100" value="10" id="c-slider" class="chaos-slider absolute top-1/2 -translate-y-1/2 w-full z-10">
                     </div>
                     <div class="w-full bg-gray-700 h-2 rounded"><div id="hold-progress" class="bg-green-400 h-full rounded w-0"></div></div>
@@ -438,9 +519,9 @@
                 const slider = document.getElementById('c-slider'), prog = document.getElementById('hold-progress');
                 let holdTime = 0, isDragging = false;
                 slider.addEventListener('mousedown', () => isDragging = true); slider.addEventListener('touchstart', () => isDragging = true);
-                window.addEventListener('mouseup', () => isDragging = false); window.addEventListener('touchend', () => isDragging = false);
+                addGameListener(window, 'mouseup', () => isDragging = false); addGameListener(window, 'touchend', () => isDragging = false);
 
-                let interval = setInterval(() => {
+                setGameInterval(() => {
                     if(!isDragging && Math.random() > 0.3) slider.value = parseInt(slider.value) + (Math.random() - 0.5) * 40;
                     else if (isDragging) slider.value = parseInt(slider.value) + (Math.random() - 0.5) * 10;
 
@@ -448,14 +529,16 @@
                     if (val >= 40 && val <= 60) holdTime += 100; else holdTime = Math.max(0, holdTime - 50);
                     prog.style.width = (holdTime / 2000 * 100) + '%';
 
-                    if (holdTime >= 2000) { clearInterval(interval); prog.classList.replace('bg-green-400', 'bg-pink-500'); slider.disabled = true; setTimeout(() => handleAnswer(15), 500); }
+                    if (holdTime >= 2000) { 
+                        prog.classList.replace('bg-green-400', 'bg-pink-500'); slider.disabled = true; 
+                        triggerPass(15); 
+                    }
                 }, 100);
             }
 
             else if (gameId === 'wooden_fish') {
                 container.innerHTML = `
                     <div id="game-container" class="relative w-full bg-gray-900 rounded-lg flex flex-col items-center justify-center p-6 h-64 overflow-hidden select-none border border-amber-900/50">
-                        <div id="merit-msg" class="absolute top-4 text-sm text-gray-500 transition-colors duration-300">心诚则灵，勿生贪念</div>
                         <div id="merit-count" class="text-3xl font-bold text-amber-500 mb-6 font-mono z-10 drop-shadow-md">功德: 0</div>
                         <div id="muyu" class="relative w-28 h-20 bg-gradient-to-br from-amber-700 to-amber-900 rounded-full cursor-pointer flex items-center justify-center shadow-[0_10px_20px_rgba(0,0,0,0.5),inset_0_3px_5px_rgba(255,255,255,0.2)] transition-transform active:scale-95 z-10">
                             <div class="absolute w-16 h-6 border-t-4 border-amber-950/40 rounded-full top-2"></div>
@@ -464,227 +547,351 @@
                         <button id="finish-btn" class="mt-8 px-6 py-2 bg-gray-700 rounded text-gray-300 font-bold opacity-50 cursor-not-allowed transition-all z-10">功德圆满</button>
                     </div>
                 `;
-                const box = document.getElementById('game-container'), muyu = document.getElementById('muyu'), countDisplay = document.getElementById('merit-count'), finishBtn = document.getElementById('finish-btn'), msgDisplay = document.getElementById('merit-msg');
+                const box = document.getElementById('game-container'), muyu = document.getElementById('muyu'), countDisplay = document.getElementById('merit-count'), finishBtn = document.getElementById('finish-btn');
                 let merits = 0, gameOver = false;
 
                 const createFloatingText = (x, y) => {
                     const el = document.createElement('div'); el.innerText = '功德+1'; el.className = 'absolute text-amber-400 font-bold pointer-events-none transition-all duration-700 ease-out z-20 text-lg drop-shadow-md';
                     el.style.left = (x + (Math.random() - 0.5) * 40) + 'px'; el.style.top = y + 'px'; el.style.transform = 'translate(-50%, -50%)'; el.style.opacity = '1';
-                    box.appendChild(el); void el.offsetWidth; el.style.top = (y - 80) + 'px'; el.style.opacity = '0'; setTimeout(() => el.remove(), 700);
+                    box.appendChild(el); void el.offsetWidth; el.style.top = (y - 80) + 'px'; el.style.opacity = '0'; setGameTimeout(() => el.remove(), 700);
                 };
 
                 const handleHit = (e) => {
                     if(gameOver) return;
                     let clientX = e.clientX || (e.touches && e.touches[0].clientX), clientY = e.clientY || (e.touches && e.touches[0].clientY);
                     if(!clientX) { const rect = box.getBoundingClientRect(); clientX = rect.left + rect.width/2; clientY = rect.top + rect.height/2; }
-                    const rect = box.getBoundingClientRect(); createFloatingText(clientX - rect.left, clientY - rect.top); merits++;
+                    const rect = box.getBoundingClientRect(); createFloatingText(clientX - rect.left, clientY - rect.top); 
+                    merits++;
+                    countDisplay.innerText = `功德: ${merits}`;
                     
                     if (merits > 49) {
-                        merits = 0; countDisplay.innerText = "功德: 0"; msgDisplay.innerText = "贪欲大起，功德尽失！重头来过"; msgDisplay.classList.replace('text-gray-500', 'text-red-500'); msgDisplay.classList.replace('text-amber-400', 'text-red-500'); box.classList.add('bg-red-900/30');
-                        setTimeout(() => { msgDisplay.classList.replace('text-red-500', 'text-gray-500'); box.classList.remove('bg-red-900/30'); msgDisplay.innerText = "心诚则灵，勿生贪念"; }, 1500);
-                    } else { countDisplay.innerText = `功德: ${merits}`; }
-
-                    if (merits === 49) {
-                        finishBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-700', 'text-gray-300'); finishBtn.classList.add('hover:bg-amber-500', 'bg-amber-600', 'text-white', 'shadow-[0_0_15px_rgba(245,158,11,0.6)]'); msgDisplay.innerText = "功德已满，请速速离场"; msgDisplay.classList.replace('text-gray-500', 'text-amber-400');
-                    } else {
-                        finishBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-700', 'text-gray-300'); finishBtn.classList.remove('hover:bg-amber-500', 'bg-amber-600', 'text-white', 'shadow-[0_0_15px_rgba(245,158,11,0.6)]');
-                        if (merits > 0 && merits < 49 && msgDisplay.classList.contains('text-amber-400')) { msgDisplay.classList.replace('text-amber-400', 'text-gray-500'); msgDisplay.innerText = "心诚则灵，勿生贪念"; }
+                        gameOver = true;
+                        triggerFail('wooden_fish');
+                    } else if (merits === 49) {
+                        finishBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-700', 'text-gray-300'); finishBtn.classList.add('hover:bg-amber-500', 'bg-amber-600', 'text-white', 'shadow-[0_0_15px_rgba(245,158,11,0.6)]');
                     }
                 };
                 muyu.addEventListener('mousedown', e => { e.preventDefault(); handleHit(e); }); muyu.addEventListener('touchstart', e => { e.preventDefault(); handleHit(e); }, { passive: false });
-                finishBtn.addEventListener('click', () => { if (merits === 49 && !gameOver) { gameOver = true; finishBtn.innerText = "🙏 善哉善哉"; setTimeout(() => handleAnswer(15), 1000); } });
+                finishBtn.addEventListener('click', () => { if (merits === 49 && !gameOver) { gameOver = true; finishBtn.innerText = "🙏 善哉"; triggerPass(15); } });
             }
 
             else if (gameId === 'dont_click') {
                 container.innerHTML = `
-                    <div id="game-container" class="flex items-center justify-center">
-                        <button id="tempt-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded opacity-0 transition-opacity duration-1000 transform scale-50">千万别点我</button>
-                        <div class="absolute bottom-2 text-white text-xl font-mono" id="countdown">5</div>
+                    <div id="game-container" class="flex items-center justify-center w-full h-32 relative">
+                        <button id="tempt-btn" class="bg-red-600 text-white font-bold py-3 px-8 rounded opacity-0 transition-opacity duration-1000 transform scale-50 z-10"></button>
                     </div>
                 `;
-                const btn = document.getElementById('tempt-btn'), cd = document.getElementById('countdown');
+                const btn = document.getElementById('tempt-btn');
                 let time = 5, clicked = false;
-                setTimeout(() => { btn.style.opacity = '1'; btn.style.transform = 'scale(1)'; }, 1000);
-                btn.addEventListener('click', () => { clicked = true; btn.innerText = "你点它干嘛？"; btn.classList.replace('bg-red-600', 'bg-gray-600'); cd.innerText = "失败"; setTimeout(() => handleAnswer(0), 1000); });
-                let interval = setInterval(() => {
-                    if (clicked) { clearInterval(interval); return; }
-                    time--; cd.innerText = time;
-                    if (time <= 0) { clearInterval(interval); btn.style.opacity = '0'; cd.innerText = "意志坚定！"; cd.classList.add('text-green-400'); setTimeout(() => handleAnswer(15), 1000); }
+                setGameTimeout(() => { btn.style.opacity = '1'; btn.style.transform = 'scale(1)'; }, 500);
+                btn.addEventListener('click', () => { 
+                    clicked = true; 
+                    triggerFail('dont_click');
+                });
+                setGameInterval(() => {
+                    if (clicked) return;
+                    time--;
+                    if (time <= 0) { 
+                        btn.style.opacity = '0'; 
+                        triggerPass(15); 
+                    }
                 }, 1000);
             }
 
             else if (gameId === 'catch_btn') {
                 container.innerHTML = `
                     <div id="catch-zone" class="relative w-full h-64 bg-gray-900 rounded-lg overflow-hidden border border-cyan-500">
-                        <button id="run-btn" class="absolute px-6 py-2 bg-pink-500 rounded-full text-white font-bold transition-all duration-[50ms] shadow-[0_0_15px_#ff00ff]">抓住我!</button>
-                        <div class="absolute bottom-2 right-2 text-gray-500 text-sm">剩余时间: <span id="catch-time">10</span>s</div>
+                        <button id="run-btn" class="absolute w-12 h-12 bg-pink-500 rounded-full text-white font-bold transition-all duration-[50ms] shadow-[0_0_15px_#ff00ff]"></button>
                     </div>
                 `;
-                const btn = document.getElementById('run-btn'), timeSpan = document.getElementById('catch-time');
+                const btn = document.getElementById('run-btn');
                 let timeLeft = 10, isCaught = false;
                 btn.style.left = '40%'; btn.style.top = '40%';
-                const moveBtn = () => { if(!isCaught) { btn.style.left = Math.random() * 75 + '%'; btn.style.top = Math.random() * 75 + '%'; } };
-                btn.addEventListener('mouseenter', moveBtn); btn.addEventListener('touchstart', e => { e.preventDefault(); moveBtn(); });
-                btn.addEventListener('click', () => { isCaught = true; btn.innerText = "被抓了!"; btn.classList.replace('bg-pink-500', 'bg-green-500'); setTimeout(() => handleAnswer(15), 1000); });
-                let timer = setInterval(() => {
-                    if(isCaught) { clearInterval(timer); return; }
-                    timeLeft--; timeSpan.innerText = timeLeft;
-                    if(timeLeft <= 0) { clearInterval(timer); btn.innerText = "太慢了"; btn.removeEventListener('mouseenter', moveBtn); setTimeout(() => handleAnswer(0), 1000); }
+                const moveBtn = () => { if(!isCaught) { btn.style.left = Math.random() * 80 + '%'; btn.style.top = Math.random() * 80 + '%'; } };
+                btn.addEventListener('mouseenter', moveBtn); btn.addEventListener('touchstart', e => { e.preventDefault(); moveBtn(); }, {passive: false});
+                btn.addEventListener('click', () => { 
+                    isCaught = true; 
+                    btn.classList.replace('bg-pink-500', 'bg-green-500'); 
+                    triggerPass(15); 
+                });
+                setGameInterval(() => {
+                    if(isCaught) return;
+                    timeLeft--;
+                    if(timeLeft <= 0) triggerFail('catch_btn');
                 }, 1000);
             }
 
             else if (gameId === 'color_trap') {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center w-full bg-gray-900 rounded-lg p-8">
-                        <p class="text-gray-400 mb-4">请点击下方所表示上方文字<span class="text-white font-bold">实际颜色</span>的选项</p>
-                        <div class="text-6xl font-black mb-8 text-blue-500 tracking-widest">红色</div>
+                        <div class="text-6xl font-black mb-8 text-blue-500 tracking-widest pointer-events-none">红色</div>
                         <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
-                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="red">红色</button>
-                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="yellow">黄色</button>
-                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="green">绿色</button>
-                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="blue">蓝色</button>
+                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="red"></button>
+                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="yellow"></button>
+                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="green"></button>
+                            <button class="color-btn p-4 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700" data-color="blue"></button>
                         </div>
                     </div>
                 `;
                 document.querySelectorAll('.color-btn').forEach(btn => {
                     btn.addEventListener('click', e => {
-                        if(e.target.getAttribute('data-color') === 'blue') { e.target.classList.add('bg-green-600', 'text-white'); setTimeout(() => handleAnswer(15), 800); }
-                        else { e.target.classList.add('bg-red-600', 'text-white'); setTimeout(() => handleAnswer(0), 800); }
+                        if(e.target.getAttribute('data-color') === 'blue') triggerPass(15);
+                        else triggerFail('color_trap');
                     });
                 });
             }
 
-            else if (gameId === 'spam_click') {
+            else if (gameId === 'not_apple') {
                 container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center w-full py-8 select-none touch-none">
-                        <p class="text-cyan-400 mb-6">10秒内狂点50次！</p>
-                        <button id="spam-btn" class="w-32 h-32 rounded-full bg-gradient-to-tr from-pink-600 to-red-500 text-white font-black text-4xl shadow-[0_0_20px_rgba(239,68,68,0.6)] active:scale-95 transition-transform">0</button>
-                        <div class="w-full max-w-xs bg-gray-800 h-3 rounded-full mt-8 overflow-hidden"><div id="spam-bar" class="bg-cyan-400 h-full w-full"></div></div>
+                    <div class="flex flex-col items-center justify-center w-full bg-gray-900 rounded-lg p-8 select-none">
+                        <div class="mb-8 text-center text-4xl"><span id="target-word" class="font-bold text-white cursor-pointer px-4 py-2 transition-colors inline-block">苹果</span></div>
+                        <div class="flex gap-4 sm:gap-8 text-5xl sm:text-6xl mb-4">
+                            <div class="emoji-btn cursor-pointer hover:scale-110 transition-transform">🍎</div>
+                            <div class="emoji-btn cursor-pointer hover:scale-110 transition-transform">🍊</div>
+                            <div class="emoji-btn cursor-pointer hover:scale-110 transition-transform">🍐</div>
+                            <div class="emoji-btn cursor-pointer hover:scale-110 transition-transform">🍋</div>
+                        </div>
                     </div>
                 `;
-                const btn = document.getElementById('spam-btn'), bar = document.getElementById('spam-bar');
-                let count = 0, started = false, timeLeft = 10, timer;
-                const pressEvent = e => {
-                    e.preventDefault();
-                    if(!started) {
-                        started = true;
-                        timer = setInterval(() => {
-                            timeLeft -= 0.1; bar.style.width = Math.max(0, (timeLeft/10*100)) + '%';
-                            if(timeLeft <= 0) { clearInterval(timer); btn.disabled = true; handleAnswer(count >= 50 ? 15 : 0); }
-                        }, 100);
-                    }
-                    if(timeLeft > 0) {
-                        count++; btn.innerText = count;
-                        if(count >= 50) { clearInterval(timer); btn.disabled = true; btn.classList.replace('from-pink-600', 'from-green-500'); btn.classList.replace('to-red-500', 'to-emerald-400'); setTimeout(() => handleAnswer(15), 1000); }
-                    }
-                };
-                btn.addEventListener('mousedown', pressEvent); btn.addEventListener('touchstart', pressEvent, { passive: false });
+                const emojis = document.querySelectorAll('.emoji-btn'), word = document.getElementById('target-word');
+                let done = false;
+                emojis.forEach(emoji => {
+                    emoji.addEventListener('click', () => {
+                        if(done) return;
+                        triggerFail('not_apple');
+                    });
+                });
+                word.addEventListener('click', () => {
+                    if(done) return; done = true;
+                    word.classList.add('text-green-400', 'scale-125');
+                    triggerPass(15);
+                });
             }
 
-            else if (gameId === 'hold_breath') {
+            else if (gameId === 'make_bird_fly') {
                 container.innerHTML = `
-                    <div class="flex flex-col items-center py-10 w-full select-none">
-                        <p class="text-gray-400 mb-6 text-center">按住按钮，凭直觉在<span class="text-pink-500 font-bold">精确的3.0秒</span>时松开。(误差±0.2秒)</p>
-                        <button id="hold-btn" class="px-10 py-6 bg-purple-700 rounded-2xl text-white font-bold text-xl shadow-[0_10px_0_#4c1d95] active:translate-y-2 active:shadow-[0_0px_0_#4c1d95] transition-all touch-none">按住我</button>
-                        <p id="hold-res" class="mt-8 text-2xl font-mono text-cyan-400 h-8"></p>
+                    <div id="bird-box" class="relative w-full h-64 bg-sky-900 rounded-lg overflow-hidden flex flex-col items-center justify-center select-none" style="touch-action: none;">
+                        <div id="bird" class="absolute text-6xl transition-all duration-[1500ms] z-10 top-[25%] pointer-events-auto cursor-pointer hover:scale-110">🐦</div>
+                        <div id="branch" class="absolute bg-amber-800 h-4 w-32 rounded-full cursor-grab active:cursor-grabbing z-20 top-[45%]"></div>
                     </div>
                 `;
-                const btn = document.getElementById('hold-btn'), res = document.getElementById('hold-res');
-                let startT = 0, done = false;
-                const down = e => { if(!done) { e.preventDefault(); startT = Date.now(); res.innerText = "呼吸..."; } };
-                const up = e => {
-                    if(done || !startT) return;
-                    e.preventDefault(); let diff = (Date.now() - startT) / 1000; startT = 0; done = true; res.innerText = diff.toFixed(2) + ' s';
-                    if(diff >= 2.8 && diff <= 3.2) { res.classList.add('text-green-400'); setTimeout(() => handleAnswer(15), 1500); }
-                    else { res.classList.add('text-red-500'); setTimeout(() => handleAnswer(0), 1500); }
+                const box = document.getElementById('bird-box'), bird = document.getElementById('bird'), branch = document.getElementById('branch');
+                let done = false;
+                
+                bird.addEventListener('click', () => {
+                    if(done) return;
+                    triggerFail('make_bird_fly');
+                });
+
+                let isDrag = false, stX, stY, xOff=0, yOff=0;
+                const start = e => { if(done) return; isDrag = true; let pt = e.touches ? e.touches[0] : e; stX = pt.clientX - xOff; stY = pt.clientY - yOff; };
+                const move = e => {
+                    if(!isDrag || done) return; e.preventDefault(); let pt = e.touches ? e.touches[0] : e;
+                    xOff = pt.clientX - stX; yOff = pt.clientY - stY;
+                    branch.style.transform = `translate(${xOff}px, ${yOff}px)`;
                 };
-                btn.addEventListener('mousedown', down); btn.addEventListener('touchstart', down); window.addEventListener('mouseup', up); window.addEventListener('touchend', up);
+                const end = () => {
+                    if(!isDrag || done) return; isDrag = false;
+                    if(Math.abs(xOff) > 80 || Math.abs(yOff) > 80) {
+                        done = true;
+                        branch.style.transition = 'all 1s ease-in';
+                        branch.style.transform = `translate(${xOff}px, ${yOff + 200}px) rotate(45deg)`;
+                        branch.style.opacity = '0';
+                        bird.style.top = '-100px'; 
+                        bird.style.transform = 'scale(0.5) rotate(15deg)';
+                        triggerPass(15);
+                    }
+                };
+
+                branch.addEventListener('mousedown', start); branch.addEventListener('touchstart', start, {passive:false});
+                box.addEventListener('mousemove', move); box.addEventListener('touchmove', move, {passive:false});
+                addGameListener(window, 'mouseup', end); addGameListener(window, 'touchend', end);
             }
 
             else if (gameId === 'fake_loading') {
                 container.innerHTML = `
                     <div class="w-full py-12 px-4 relative">
-                        <p class="text-center text-gray-300 mb-4">正在加载下一题...</p>
                         <div class="w-full bg-gray-800 rounded-full h-4 overflow-hidden shadow-inner relative"><div id="fake-bar" class="bg-gradient-to-r from-pink-500 to-cyan-500 h-full w-0 transition-all duration-[3000ms] ease-out"></div></div>
                         <p id="fake-pct" class="text-center mt-2 font-mono text-pink-400">0%</p>
-                        <div id="tiny-pixel" class="absolute w-3 h-3 bg-white/10 rounded-full cursor-pointer hover:bg-white transition-colors z-10" style="top: 20px; right: 20px;"></div>
+                        <div id="tiny-pixel" class="absolute w-3 h-3 bg-white/5 rounded-full cursor-pointer hover:bg-white transition-colors z-10" style="top: 20px; right: 20px;"></div>
                     </div>
                 `;
                 const bar = document.getElementById('fake-bar'), pct = document.getElementById('fake-pct'), px = document.getElementById('tiny-pixel');
-                setTimeout(() => {
+                setGameTimeout(() => {
                     bar.style.width = '99%'; let p = 0;
-                    let intv = setInterval(() => { p += Math.floor(Math.random() * 5); if(p >= 99) { p = 99; clearInterval(intv); } pct.innerText = p + '%'; }, 100);
+                    setGameInterval(() => { p += Math.floor(Math.random() * 5); if(p >= 99) { p = 99; } pct.innerText = p + '%'; }, 100);
                 }, 100);
-                px.addEventListener('click', () => { bar.style.transitionDuration = '200ms'; bar.style.width = '100%'; pct.innerText = '100%'; pct.classList.replace('text-pink-400', 'text-green-400'); setTimeout(() => handleAnswer(15), 1000); });
+                px.addEventListener('click', () => { bar.style.transitionDuration = '200ms'; bar.style.width = '100%'; pct.innerText = '100%'; pct.classList.replace('text-pink-400', 'text-green-400'); triggerPass(15); });
             }
 
-            else if (gameId === 'volume_troll') {
+            else if (gameId === 'open_door') {
                 container.innerHTML = `
-                    <div class="w-full py-10 px-6 flex flex-col items-center">
-                        <p class="text-gray-300 mb-8 text-center">强迫症测试：请将音量精确滑动到 <span class="text-white font-bold text-2xl">50</span></p>
-                        <input type="range" id="vol-slider" min="0" max="100" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <div class="mt-6 text-5xl font-black font-mono text-cyan-400" id="vol-val">0</div>
+                    <div id="door-box" class="relative w-full h-64 bg-gray-900 rounded-lg flex items-center justify-center select-none overflow-hidden" style="touch-action: none;">
+                        <div id="door-frame" class="relative w-32 h-48 border-[6px] border-amber-900 bg-amber-700 rounded-t-lg shadow-lg flex items-center justify-center transition-all duration-1000 origin-left">
+                            <div id="handle" class="absolute right-2 top-1/2 w-4 h-12 bg-yellow-500 rounded-sm shadow-md cursor-pointer hover:bg-yellow-400 active:scale-95"></div>
+                            <div id="door-word" class="text-6xl font-black text-amber-950/50 cursor-grab active:cursor-grabbing hover:text-amber-900 transition-colors z-10">门</div>
+                        </div>
                     </div>
                 `;
-                const slider = document.getElementById('vol-slider'), val = document.getElementById('vol-val');
-                let tries = 0;
-                slider.addEventListener('input', e => {
-                    let v = parseInt(e.target.value);
-                    if(v === 50) {
-                        tries++; v = Math.random() > 0.5 ? 49 : 51; slider.value = v;
-                        if(tries > 4) { slider.value = 50; val.innerText = "50"; val.classList.replace('text-cyan-400', 'text-green-400'); slider.disabled = true; setTimeout(() => handleAnswer(15), 1000); return; }
-                    }
-                    val.innerText = v;
+                const box = document.getElementById('door-box'), doorFrame = document.getElementById('door-frame'), handle = document.getElementById('handle'), word = document.getElementById('door-word');
+                let done = false;
+
+                handle.addEventListener('click', (e) => {
+                    if (done) return;
+                    e.stopPropagation();
+                    triggerFail('open_door');
                 });
+
+                let isDrag = false, stX, stY, xOff=0, yOff=0;
+                const start = e => { if(done) return; isDrag = true; let pt = e.touches ? e.touches[0] : e; stX = pt.clientX - xOff; stY = pt.clientY - yOff; };
+                const move = e => {
+                    if(!isDrag || done) return; e.preventDefault(); let pt = e.touches ? e.touches[0] : e;
+                    xOff = pt.clientX - stX; yOff = pt.clientY - stY;
+                    word.style.transform = `translate(${xOff}px, ${yOff}px)`;
+                };
+                const end = () => {
+                    if(!isDrag || done) return; isDrag = false;
+                    if(Math.abs(xOff) > 60 || Math.abs(yOff) > 80) {
+                        done = true;
+                        doorFrame.style.transform = 'perspective(800px) rotateY(-85deg)';
+                        word.style.opacity = '0';
+                        triggerPass(15);
+                    }
+                };
+
+                word.addEventListener('mousedown', start); word.addEventListener('touchstart', start, {passive:false});
+                box.addEventListener('mousemove', move); box.addEventListener('touchmove', move, {passive:false});
+                addGameListener(window, 'mouseup', end); addGameListener(window, 'touchend', end);
             }
 
             else if (gameId === 'dont_do_anything') {
                 container.innerHTML = `
-                    <div class="text-center py-10 w-full">
-                        <h3 class="text-3xl font-bold text-red-500 mb-4 glitch-text">别动！</h3>
-                        <p class="text-gray-400 mb-8">松开鼠标，放下手机，不要进行任何操作。<br>保持绝对静默 3 秒。</p>
-                        <div class="w-full max-w-sm mx-auto bg-gray-800 h-2 rounded overflow-hidden"><div id="silence-bar" class="bg-cyan-500 h-full w-0"></div></div>
+                    <div class="text-center py-10 w-full relative h-32">
+                        <div class="w-full max-w-sm mx-auto bg-gray-800 h-2 rounded overflow-hidden mt-8"><div id="silence-bar" class="bg-cyan-500 h-full w-0"></div></div>
                     </div>
                 `;
                 const bar = document.getElementById('silence-bar');
                 let stillT = 0, done = false;
-                let timer = setInterval(() => {
+                setGameInterval(() => {
                     if(done) return; stillT += 0.1; bar.style.width = (stillT/3 * 100) + '%';
-                    if(stillT >= 3) { done = true; clearInterval(timer); cleanup(); bar.classList.replace('bg-cyan-500', 'bg-green-500'); setTimeout(() => handleAnswer(15), 1000); }
+                    if(stillT >= 3) { done = true; bar.classList.replace('bg-cyan-500', 'bg-green-500'); triggerPass(15); }
                 }, 100);
+                
                 const fail = () => {
-                    if(done || stillT <= 0.3) return;
-                    stillT = 0; bar.classList.replace('bg-cyan-500', 'bg-red-500'); setTimeout(() => { if(!done) bar.classList.replace('bg-red-500', 'bg-cyan-500'); }, 200);
+                    if(done || stillT <= 0.5) return; // 给0.5秒缓冲时间防止手抖秒失败
+                    done = true;
+                    bar.classList.replace('bg-cyan-500', 'bg-red-500');
+                    triggerFail('dont_do_anything');
                 };
-                const cleanup = () => { window.removeEventListener('mousemove', fail); window.removeEventListener('keydown', fail); window.removeEventListener('touchmove', fail); };
-                window.addEventListener('mousemove', fail); window.addEventListener('keydown', fail); window.addEventListener('touchmove', fail);
+                
+                addGameListener(window, 'mousemove', fail); 
+                addGameListener(window, 'keydown', fail); 
+                addGameListener(window, 'touchmove', fail);
             }
 
-            else if (gameId === 'captcha_troll') {
+            else if (gameId === 'reverse_control') {
                 container.innerHTML = `
-                    <div class="text-center py-4 w-full">
-                        <p class="text-white mb-4">请点击验证：选出所有<span class="text-pink-500 font-bold">抽象</span>的图片</p>
-                        <div class="grid grid-cols-3 gap-2 w-full max-w-[240px] mx-auto mb-6">
-                            ${Array(9).fill(0).map((_, i) => `<div class="bg-gray-700 w-full aspect-square cursor-pointer border-2 border-transparent hover:border-gray-500 cap-box transition-colors"></div>`).join('')}
-                        </div>
-                        <button id="cap-verify" class="px-6 py-2 bg-blue-600 rounded text-white font-bold opacity-50 cursor-not-allowed transition-transform">验证</button>
+                    <div id="mirror-arena" class="relative w-full h-64 bg-gray-900 rounded-lg overflow-hidden border-2 border-indigo-500 select-none touch-none cursor-crosshair shadow-[inset_0_0_30px_rgba(99,102,241,0.2)]">
+                        <div id="mirror-goal" class="absolute w-12 h-12 border-4 border-dashed border-green-500 rounded-full animate-pulse z-10 -translate-x-1/2 -translate-y-1/2"></div>
+                        <div id="mirror-player" class="absolute w-10 h-10 bg-pink-600 rounded shadow-[0_0_15px_#ff00ff] z-20 -translate-x-1/2 -translate-y-1/2" style="top: 50%; left: 50%;"></div>
+                        <div id="mirror-timer" class="absolute bottom-2 right-2 text-indigo-400 font-mono text-sm font-bold">10.0s</div>
                     </div>
                 `;
-                let clicks = 0; const btn = document.getElementById('cap-verify');
-                document.querySelectorAll('.cap-box').forEach(box => {
-                    box.addEventListener('click', e => {
-                        const t = e.target;
-                        if(t.classList.contains('bg-gray-700')) t.classList.replace('bg-gray-700', 'bg-pink-500'); else t.classList.replace('bg-pink-500', 'bg-gray-700');
-                        clicks++;
-                        if(clicks === 2 || clicks === 4) btn.style.transform = `translate(${(Math.random()-0.5)*150}px, ${(Math.random()-0.5)*50}px)`;
-                        if(clicks >= 5) { btn.classList.remove('opacity-50', 'cursor-not-allowed'); btn.style.transform = 'translate(0,0)'; }
-                    });
-                });
-                btn.addEventListener('click', () => { if(clicks >= 5) { btn.innerText = "验证通过"; btn.classList.replace('bg-blue-600', 'bg-green-500'); setTimeout(() => handleAnswer(15), 800); } });
+                const arena = document.getElementById('mirror-arena');
+                const player = document.getElementById('mirror-player');
+                const goal = document.getElementById('mirror-goal');
+                const timerEl = document.getElementById('mirror-timer');
+
+                // 强制刷新一下尺寸
+                let rect = arena.getBoundingClientRect();
+                let pX = rect.width / 2;
+                let pY = rect.height / 2;
+                
+                // 随机生成目标位置（四个角落之一）
+                const corners = [
+                    {x: rect.width * 0.15, y: rect.height * 0.15},
+                    {x: rect.width * 0.85, y: rect.height * 0.15},
+                    {x: rect.width * 0.15, y: rect.height * 0.85},
+                    {x: rect.width * 0.85, y: rect.height * 0.85}
+                ];
+                const gPos = corners[Math.floor(Math.random() * corners.length)];
+                goal.style.left = gPos.x + 'px';
+                goal.style.top = gPos.y + 'px';
+
+                let isDragging = false;
+                let lastX = 0, lastY = 0;
+                let timeLeft = 10.0;
+                let done = false;
+
+                // 10秒生死倒计时
+                setGameInterval(() => {
+                    if(done) return;
+                    timeLeft -= 0.1;
+                    timerEl.innerText = Math.max(0, timeLeft).toFixed(1) + 's';
+                    if(timeLeft <= 0) {
+                        done = true;
+                        triggerFail('reverse_control');
+                    }
+                }, 100);
+
+                const start = (e) => {
+                    if(done) return;
+                    isDragging = true;
+                    rect = arena.getBoundingClientRect(); // 保证坐标正确
+                    const pt = e.touches ? e.touches[0] : e;
+                    lastX = pt.clientX;
+                    lastY = pt.clientY;
+                };
+
+                const move = (e) => {
+                    if(!isDragging || done) return;
+                    e.preventDefault(); 
+                    const pt = e.touches ? e.touches[0] : e;
+                    const dx = pt.clientX - lastX;
+                    const dy = pt.clientY - lastY;
+                    lastX = pt.clientX;
+                    lastY = pt.clientY;
+
+                    // 核心抽象逻辑：完全反向移动
+                    pX -= dx;
+                    pY -= dy;
+
+                    // 边界限制
+                    pX = Math.max(20, Math.min(rect.width - 20, pX));
+                    pY = Math.max(20, Math.min(rect.height - 20, pY));
+
+                    player.style.left = pX + 'px';
+                    player.style.top = pY + 'px';
+
+                    // 碰撞检测（容错半径35）
+                    const dist = Math.hypot(pX - gPos.x, pY - gPos.y);
+                    if(dist < 35) {
+                        done = true;
+                        player.style.backgroundColor = '#22c55e';
+                        player.style.boxShadow = '0 0 20px #22c55e';
+                        triggerPass(15);
+                    }
+                };
+
+                const end = () => isDragging = false;
+
+                arena.addEventListener('mousedown', start);
+                arena.addEventListener('touchstart', start, {passive: false});
+                addGameListener(window, 'mousemove', move);
+                addGameListener(window, 'touchmove', move, {passive: false});
+                addGameListener(window, 'mouseup', end);
+                addGameListener(window, 'touchend', end);
             }
         };
 
+        const handleAnswer = (scoreToAdd) => {
+            state.score += scoreToAdd;
+            state.currentStep++;
+            renderTest();
+        };
+
         const renderResult = async () => {
+            cleanupGame(); // 清理所有的游戏遗留状态
             const rank = getRank(state.score);
             
             renderHTML(`
